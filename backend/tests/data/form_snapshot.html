@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form A-28: Legal Documentation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .form-container {
+            background-color: white;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .form-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #003366;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+            background-color: #fafafa;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+            color: #003366;
+            background-color: #f9f9f9;
+            border: 2px solid #003366;
+        }
+        .form-title {
+            text-align: center;
+            flex-grow: 1;
+        }
+        .form-title h1 {
+            font-size: 18px;
+            margin: 0 0 10px 0;
+        }
+        .form-title h2 {
+            font-size: 16px;
+            margin: 0 0 10px 0;
+            font-weight: normal;
+        }
+        .form-info {
+            text-align: right;
+            width: 150px;
+        }
+        .part-header {
+            background-color: #f0f0f0;
+            padding: 8px;
+            margin: 20px 0 10px 0;
+            border: 1px solid #ccc;
+            font-weight: bold;
+        }
+        .form-section {
+            margin-bottom: 20px;
+        }
+        .form-row {
+            margin-bottom: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"],
+        input[type="tel"],
+        input[type="email"],
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        input[type="date"] {
+            width: 33%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+            margin: 8px 0;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        .address-fields {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 10px;
+        }
+        .address-fields .apt-options {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .address-fields .apt-options label {
+            margin: 0;
+            font-weight: normal;
+        }
+        .city-state-zip {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 10px;
+        }
+        .signature-field {
+            border-bottom: 1px solid #333;
+            height: 30px;
+            margin-bottom: 10px;
+        }
+        .date-field {
+            width: 50%;
+        }
+        .note {
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        .page-break {
+            page-break-before: always;
+            margin-top: 40px;
+            border-top: 1px dashed #ccc;
+            padding-top: 40px;
+        }
+        .additional-info-box {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .additional-info-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 2fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <!-- Form Header -->
+        <div class="form-header">
+            <div class="logo">LEGAL</div>
+            <div class="form-title">
+                <h1>Legal Services<br>Documentation</h1>
+            </div>
+            <div class="form-info">
+                <p>Form A-28</p>
+                <p>Rev. 04/2025</p>
+            </div>
+        </div>
+
+        <!-- Part 1 -->
+        <div class="part-header">Part 1. Information About Attorney or Representative</div>
+        <div class="form-section">
+            <div class="form-row">
+                <label for="online-account">1. Online Account Number (if any)</label>
+                <input type="text" id="online-account" name="online-account">
+            </div>
+
+            <div class="form-row">
+                <label>Name of Attorney or Representative</label>
+                <div class="form-row">
+                    <label for="family-name">2.a. Family Name (Last Name)</label>
+                    <input type="text" id="family-name" name="family-name">
+                </div>
+                <div class="form-row">
+                    <label for="given-name">2.b. Given Name (First Name)</label>
+                    <input type="text" id="given-name" name="given-name">
+                </div>
+                <div class="form-row">
+                    <label for="middle-name">2.c. Middle Name</label>
+                    <input type="text" id="middle-name" name="middle-name">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label>Address of Attorney or Representative</label>
+                <div class="form-row">
+                    <label for="street-number">3.a. Street Number and Name</label>
+                    <input type="text" id="street-number" name="street-number">
+                </div>
+
+                <div class="form-row address-fields">
+                    <div class="apt-options">
+                        <input type="checkbox" id="apt" name="apt-type" value="apt">
+                        <label for="apt">Apt.</label>
+                        <input type="checkbox" id="ste" name="apt-type" value="ste">
+                        <label for="ste">Ste.</label>
+                        <input type="checkbox" id="flr" name="apt-type" value="flr">
+                        <label for="flr">Flr.</label>
+                    </div>
+                    <input type="text" id="apt-number" name="apt-number">
+                </div>
+
+                <div class="form-row">
+                    <label for="city">3.c. City</label>
+                    <input type="text" id="city" name="city">
+                </div>
+
+                <div class="form-row city-state-zip">
+                    <div>
+                        <label for="state">3.d. State</label>
+                        <select id="state" name="state">
+                            <option value="">Select a state</option>
+                            <option value="AL">Alabama</option>
+                            <option value="AK">Alaska</option>
+                            <option value="AZ">Arizona</option>
+                            <option value="AR">Arkansas</option>
+                            <option value="CA">California</option>
+                            <option value="CO">Colorado</option>
+                            <option value="CT">Connecticut</option>
+                            <option value="DE">Delaware</option>
+                            <option value="DC">District of Columbia</option>
+                            <option value="FL">Florida</option>
+                            <option value="GA">Georgia</option>
+                            <option value="HI">Hawaii</option>
+                            <option value="ID">Idaho</option>
+                            <option value="IL">Illinois</option>
+                            <option value="IN">Indiana</option>
+                            <option value="IA">Iowa</option>
+                            <option value="KS">Kansas</option>
+                            <option value="KY">Kentucky</option>
+                            <option value="LA">Louisiana</option>
+                            <option value="ME">Maine</option>
+                            <option value="MD">Maryland</option>
+                            <option value="MA">Massachusetts</option>
+                            <option value="MI">Michigan</option>
+                            <option value="MN">Minnesota</option>
+                            <option value="MS">Mississippi</option>
+                            <option value="MO">Missouri</option>
+                            <option value="MT">Montana</option>
+                            <option value="NE">Nebraska</option>
+                            <option value="NV">Nevada</option>
+                            <option value="NH">New Hampshire</option>
+                            <option value="NJ">New Jersey</option>
+                            <option value="NM">New Mexico</option>
+                            <option value="NY">New York</option>
+                            <option value="NC">North Carolina</option>
+                            <option value="ND">North Dakota</option>
+                            <option value="OH">Ohio</option>
+                            <option value="OK">Oklahoma</option>
+                            <option value="OR">Oregon</option>
+                            <option value="PA">Pennsylvania</option>
+                            <option value="RI">Rhode Island</option>
+                            <option value="SC">South Carolina</option>
+                            <option value="SD">South Dakota</option>
+                            <option value="TN">Tennessee</option>
+                            <option value="TX">Texas</option>
+                            <option value="UT">Utah</option>
+                            <option value="VT">Vermont</option>
+                            <option value="VA">Virginia</option>
+                            <option value="WA">Washington</option>
+                            <option value="WV">West Virginia</option>
+                            <option value="WI">Wisconsin</option>
+                            <option value="WY">Wyoming</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="zip">3.e. ZIP Code</label>
+                        <input type="text" id="zip" name="zip">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label for="country">3.f. Country</label>
+                    <input type="text" id="country" name="country">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label>Contact Information of Attorney or Representative</label>
+                <div class="form-row">
+                    <label for="daytime-phone">4. Daytime Telephone Number</label>
+                    <input type="tel" id="daytime-phone" name="daytime-phone">
+                </div>
+
+                <div class="form-row">
+                    <label for="mobile-phone">5. Mobile Telephone Number (if any)</label>
+                    <input type="tel" id="mobile-phone" name="mobile-phone">
+                </div>
+
+                <div class="form-row">
+                    <label for="email">6. Email Address (if any)</label>
+                    <input type="email" id="email" name="email">
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Part 2 -->
+        <div class="part-header">Part 2. Eligibility Information for Attorney or Representative</div>
+        <div class="form-section">
+            <p>Select all applicable items.</p>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="attorney-eligible" name="eligibility" value="attorney">
+                <span for="attorney-eligible"><strong>1.a.</strong> I am an attorney eligible to practice law in, and a member in good standing of, the bar of the highest courts of the following jurisdictions. If you need extra space to complete this section, use the space provided in Part 6. Additional Information.</span>
+            </div>
+
+            <div class="form-row">
+                <label for="licensing-authority">Licensing Authority</label>
+                <input type="text" id="licensing-authority" name="licensing-authority">
+            </div>
+
+            <div class="form-row">
+                <label for="bar-number">1.b. Bar Number (if applicable)</label>
+                <input type="text" id="bar-number" name="bar-number">
+            </div>
+
+            <div class="form-row">
+                <label for="practice-restrictions">1.c. I (select only one box)</label>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="not-subject" name="subject-to-orders" value="not">
+                    <label for="not-subject" style="margin-right: 30px;">am not</label>
+                    <input type="checkbox" id="am-subject" name="subject-to-orders" value="am">
+                    <label for="am-subject" style="margin-right: 15px;">am</label>
+                    <span>subject to any order suspending, enjoining, restraining, disbarring, or otherwise restricting me in the practice of law. If you are subject to any orders, use the space provided in Part 6. Additional Information to provide an explanation.</span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label for="law-firm">1.d. Name of Law Firm or Organization (if applicable)</label>
+                <input type="text" id="law-firm" name="law-firm">
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="accredited-rep" name="eligibility" value="accredited">
+                <span for="accredited-rep"><strong>2.a.</strong> I am an accredited representative of the following
+                    qualified nonprofit religious, charitable, social
+                    service, or similar organization established in the
+                    United States and recognized by the Department of
+                    Justice in accordance with 8 CFR part 1292.</span>
+            </div>
+
+            <div class="form-row">
+                <label for="recognized-org">2.b. Name of Recognized Organization</label>
+                <input type="text" id="recognized-org" name="recognized-org">
+            </div>
+
+            <div class="form-row">
+                <label for="accreditation-date">2.c. Date of Accreditation</label>
+                <input type="date" id="accreditation-date" name="accreditation-date">
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="associated-with" name="eligibility" value="associated">
+                <label for="associated-with">3. I am associated with</label>
+                <input type="text" id="associated-with-name" name="associated-with-name">
+                <span>the attorney or accredited representative of record who previously filed Form G-28 in this case, and my appearance as an attorney or accredited representative for a limited purpose is at his or her request.</span>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="law-student" name="eligibility" value="student">
+                <label for="law-student">4.a. I am a law student or law graduate working under the direct supervision of the attorney or representative of record on this form.</label>
+            </div>
+
+            <div class="form-row">
+                <label for="student-name">4.b. Name of Law Student or Law Graduate</label>
+                <input type="text" id="student-name" name="student-name">
+            </div>
+        </div>
+
+        <!-- Page Break -->
+        <div class="page-break"></div>
+
+        <!-- Part 3 -->
+        <div class="part-header">Part 3. Passport Information for the Beneficiary</div>
+        <div class="form-section">
+            <div class="form-row">                
+                <div class="form-row">
+                    <label for="passport-surname">1.a. Last Name </label>
+                    <input type="text" id="passport-surname" name="passport-surname">
+                </div>
+                
+                <div class="form-row">
+                    <label for="passport-given-names">1.b. First Name(s)</label>
+                    <input type="text" id="passport-given-names" name="passport-given-names">
+                </div>
+
+                <div class="form-row">
+                    <label for="passport-given-names">1.c. Middle Name(s) (if any)</label>
+                    <input type="text" id="passport-given-names" name="passport-given-names">
+                </div>
+    
+                
+                <div class="form-row">
+                    <label for="passport-number">2. Passport Number</label>
+                    <input type="text" id="passport-number" name="passport-number">
+                </div>
+
+                <div class="form-row">
+                    <label for="passport-country">3. Country of Issue</label>
+                    <input type="text" id="passport-country" name="passport-country">
+                </div>
+
+                <div class="form-row">
+                    <label for="passport-nationality">4. Nationality</label>
+                    <input type="text" id="passport-nationality" name="passport-nationality">
+                </div>
+
+                <div class="form-row">
+                    <label for="passport-dob">5.a. Date of Birth</label>
+                    <input type="date" id="passport-dob" name="passport-dob">
+                </div>
+
+                <div class="form-row">
+                    <label for="passport-pob">5.b. Place of Birth</label>
+                    <input type="text" id="passport-pob" name="passport-pob">
+                </div>
+
+                <div class="form-row">
+                    <label for="passport-sex">6. Sex</label>
+                    <select id="passport-sex" name="passport-sex">
+                        <option value="">Select</option>
+                        <option value="M">M</option>
+                        <option value="F">F</option>
+                        <option value="X">X</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <label for="passport-issue-date">7.a. Date of Issue</label>
+                    <input type="date" id="passport-issue-date" name="passport-issue-date">
+                </div>
+
+                <div class="form-row">
+                    <label for="passport-expiry-date">7.b. Date of Expiration</label>
+                    <input type="date" id="passport-expiry-date" name="passport-expiry-date">
+                </div>
+            </div>
+        </div>
+
+        <!-- Page Break -->
+        <div class="page-break"></div>
+
+        <!-- Part 4 -->
+        <div class="part-header">Part 4. Client's Consent to Representation and Signature</div>
+        <div class="form-section">
+            <p>Consent to Representation and Release of Information</p>
+            <p>I have requested the representation of and consented to being represented by the attorney or representative named in Part 1 of this form. I consent to the disclosure to the named attorney or representative of any records pertaining to me that are relevant to this matter.</p>
+
+            <p>Options Regarding Receipt of Notices and Documents</p>
+            <p>Notices will be sent to both a represented party (the client) and their attorney or representative either through mail or electronic delivery. Important documents will be sent to the client's mailing address.</p>
+
+            <p>If you want to have notices and/or documents sent to your attorney or representative of record rather than to you, please select all applicable items below. You may change these elections through written notice at any time.</p>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="notices-to-attorney" name="notices-option">
+                <label for="notices-to-attorney">1.a. I request that all original notices on an application or petition be sent to the business address of my attorney or representative as listed in this form.</label>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="documents-to-attorney" name="documents-option">
+                <label for="documents-to-attorney">1.b. I request that any important documents that I receive be sent to the business address of my attorney or representative.</label>
+            </div>
+
+            <div class="note">
+                <p>NOTE: If your notice contains important travel documentation, it will be sent to the business address of your attorney or representative. If you would rather have this documentation sent directly to you, select Item Number 1.c.</p>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="docs-to-me" name="docs-option">
+                <label for="docs-to-me">1.c. I request that important documentation be sent to me at my mailing address.</label>
+            </div>
+
+            <div class="form-row">
+                <label>Signature of Client or Authorized Signatory for an Entity</label>
+                <div class="signature-field"></div>
+                <label for="client-signature-date">2. Date of Signature</label>
+                <input type="date" id="client-signature-date" name="client-signature-date" class="date-field">
+            </div>
+        </div>
+
+        <!-- Part 5 -->
+        <div class="part-header">Part 5. Signature of Attorney or Representative</div>
+        <div class="form-section">
+            <p>I declare under penalty of perjury that the information I have provided on this form is true and correct to the best of my knowledge.</p>
+
+            <div class="form-row">
+                <div class="signature-field"></div>
+                <label for="attorney-signature-date">1. Date of Signature</label>
+                <input type="date" id="attorney-signature-date" name="attorney-signature-date" class="date-field">
+            </div>
+
+        <!-- Page Break -->
+        <div class="page-break"></div>
+
+            </div>
+        </div>
+    </div>
+</body>
+</html>
