@@ -1,0 +1,37 @@
+# Secrets — never committed
+.env
+.env.*
+!.env.example
+
+# PII — uploaded documents and test fixtures never reach the repo
+uploads/
+backend/uploads/
+backend/tests/fixtures/*
+!backend/tests/fixtures/README.md
+backend/tests/.extraction_cache/
+
+# Internal strategy notes (not part of the deliverable)
+Alma_Assignment_Master_Brief.md
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Node / Next.js
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/.turbo/
+
+# Playwright artifacts
+backend/playwright-traces/
+test-results/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
