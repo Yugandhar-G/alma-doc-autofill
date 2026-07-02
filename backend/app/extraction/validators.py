@@ -89,6 +89,26 @@ def check_state(value: str | None, field: str) -> tuple[str | None, FieldWarning
     )
 
 
+# US-variant canonicalization only: the model returns "United States" or "USA"
+# non-deterministically for the same printed value; one canonical form keeps
+# extraction stable across runs. Non-US countries pass through as printed.
+_US_CANONICAL = "United States of America"
+_US_VARIANTS: frozenset[str] = frozenset(
+    v.casefold()
+    for v in ("us", "usa", "u.s.", "u.s.a.", "united states", "united states of america")
+)
+
+
+def canonicalize_country(value: str | None) -> str | None:
+    """US name variants → one canonical form; everything else unchanged."""
+    if value is None:
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    return _US_CANONICAL if cleaned.casefold() in _US_VARIANTS else cleaned
+
+
 def validate_passport(data: PassportData) -> tuple[PassportData, list[FieldWarning]]:
     """Return a new, validated PassportData plus warnings for any nulled field."""
     warnings: list[FieldWarning] = []
@@ -105,6 +125,9 @@ def validate_passport(data: PassportData) -> tuple[PassportData, list[FieldWarni
     if warning:
         warnings.append(warning)
 
+    updates["country_of_issue"] = canonicalize_country(data.country_of_issue)
+    updates["nationality"] = canonicalize_country(data.nationality)
+
     return data.model_copy(update=updates), warnings
 
 
@@ -115,7 +138,9 @@ def validate_g28(data: G28Data) -> tuple[G28Data, list[FieldWarning]]:
     state, state_warning = check_state(data.attorney.state, "attorney.state")
     if state_warning:
         warnings.append(state_warning)
-    attorney = data.attorney.model_copy(update={"state": state})
+    attorney = data.attorney.model_copy(
+        update={"state": state, "country": canonicalize_country(data.attorney.country)}
+    )
 
     accreditation_date, date_warning = check_date(
         data.eligibility.accreditation_date, "eligibility.accreditation_date"

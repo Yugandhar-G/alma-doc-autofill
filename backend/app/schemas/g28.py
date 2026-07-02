@@ -16,7 +16,12 @@ class AttorneyInfo(BaseModel):
     )
     apt_ste_flr_number: str | None = None
     city: str | None = None
-    state: str | None = Field(None, description="Full US state name, e.g. 'California'")
+    state: str | None = Field(
+        None,
+        description="Item 3.d State from the attorney's ADDRESS block only, as "
+        "printed there (abbreviation or full name). Never inferred from the "
+        "Licensing Authority or any other field.",
+    )
     zip_code: str | None = None
     country: str | None = Field(None, description="Full English country name")
     daytime_phone: str | None = Field(
