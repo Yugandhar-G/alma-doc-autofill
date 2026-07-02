@@ -4,6 +4,7 @@
  * user-facing message, never as silently-empty data.
  */
 import { API_BASE } from "./config";
+import { getSessionId } from "./telemetry";
 import type {
   ApiResponse,
   ExtractionEnvelope,
@@ -33,8 +34,13 @@ async function parseEnvelope<T>(res: Response): Promise<T> {
 }
 
 async function request(path: string, init: RequestInit): Promise<Response> {
+  // The session id groups this tab's requests into one observability session.
+  const headers = {
+    ...(init.headers as Record<string, string> | undefined),
+    "X-Session-Id": getSessionId(),
+  };
   try {
-    return await fetch(`${API_BASE}${path}`, init);
+    return await fetch(`${API_BASE}${path}`, { ...init, headers });
   } catch {
     throw new ApiError(
       `Could not reach the backend at ${API_BASE}. Start it with \`make dev\` and try again.`,

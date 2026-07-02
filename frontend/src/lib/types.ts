@@ -150,6 +150,9 @@ export interface PopulationReport {
   mismatches: number;
   errors: number;
   ok: boolean;
+  /** Content hash of the captured filled-form artifact; null when capture failed. */
+  artifact_id: string | null;
+  artifact_kind: "pdf" | "png" | null;
 }
 
 export interface ApiResponse<T = Record<string, unknown>> {
