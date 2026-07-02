@@ -1,8 +1,18 @@
 """Storage interface — Supabase when configured, local disk otherwise.
-Concrete implementations by Agent A. Exactly three methods; keep it that way."""
+Concrete implementations by Agent A. Exactly three methods; keep it that way.
+
+Extraction records are keyed by (doc_id, doc_type, kind) so identical bytes
+uploaded into two slots cannot clobber each other's audit record, and both
+the raw extraction and the reviewed/merged record the user actually saw are
+retained ("raw" = straight from the model; "final" = post-merge/coherence,
+what the review table displayed).
+"""
 from abc import ABC, abstractmethod
+from typing import Literal
 
 from app.schemas import ExtractionEnvelope
+
+ExtractionKind = Literal["raw", "final"]
 
 
 class DocumentStore(ABC):
@@ -11,11 +21,15 @@ class DocumentStore(ABC):
         """Persist original bytes; returns doc_id (content hash)."""
 
     @abstractmethod
-    async def save_extraction(self, doc_id: str, envelope: ExtractionEnvelope) -> None:
-        """Persist the extraction result for a document."""
+    async def save_extraction(
+        self, doc_id: str, envelope: ExtractionEnvelope, kind: ExtractionKind = "raw"
+    ) -> None:
+        """Persist an extraction record keyed by (doc_id, requested doc type, kind)."""
 
     @abstractmethod
-    async def get_extraction(self, doc_id: str) -> ExtractionEnvelope | None:
+    async def get_extraction(
+        self, doc_id: str, doc_type: str, kind: ExtractionKind = "raw"
+    ) -> ExtractionEnvelope | None:
         """Fetch a previously saved extraction, if any."""
 
 

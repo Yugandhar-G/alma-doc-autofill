@@ -94,10 +94,8 @@ async def _entry_for(page: Page, write: PendingWrite) -> PopulationEntry:
         )
     status = "filled" if actual == write.expected else "mismatch"
     if status == "mismatch":
-        logger.error(
-            "population mismatch for %s: expected %r, got %r",
-            spec.selector, write.expected, actual,
-        )
+        # PII rule: values belong only in the report, never in logs.
+        logger.error("population mismatch for %s (%s)", spec.selector, spec.source)
     return PopulationEntry(**base, status=status, expected=write.expected, actual=actual)
 
 

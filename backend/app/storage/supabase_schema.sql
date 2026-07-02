@@ -4,12 +4,17 @@
 
 -- 1) Extraction results table. doc_id is the SHA-256 of the uploaded bytes
 --    (content-addressed, PII-safe reference). Original filenames are never stored.
+-- Keyed by (doc_id, doc_type, kind): identical bytes uploaded into two slots
+-- must not clobber each other, and both the raw extraction and the reviewed
+-- "final" record (post-merge/coherence — what the user actually saw) coexist.
 create table if not exists public.extractions (
-    doc_id     text primary key check (doc_id ~ '^[0-9a-f]{64}$'),
+    doc_id     text not null check (doc_id ~ '^[0-9a-f]{64}$'),
     doc_type   text not null check (doc_type in ('passport', 'g28')),
+    kind       text not null default 'raw' check (kind in ('raw', 'final')),
     envelope   jsonb not null,
     created_at timestamptz not null default now(),
-    updated_at timestamptz not null default now()
+    updated_at timestamptz not null default now(),
+    primary key (doc_id, doc_type, kind)
 );
 
 create or replace function public.touch_updated_at()

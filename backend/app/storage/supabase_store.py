@@ -79,15 +79,20 @@ class SupabaseStore(DocumentStore):
         logger.info("stored document doc_type=%s doc_id=%s", doc_type, doc_id)
         return doc_id
 
-    async def save_extraction(self, doc_id: str, envelope: ExtractionEnvelope) -> None:
+    async def save_extraction(
+        self, doc_id: str, envelope: ExtractionEnvelope, kind: str = "raw"
+    ) -> None:
         row = {
             "doc_id": doc_id,
             "doc_type": envelope.document_type_requested,
+            "kind": kind,
             "envelope": envelope.model_dump(mode="json"),
         }
 
         def _upsert() -> None:
-            self._client.table(_EXTRACTIONS_TABLE).upsert(row, on_conflict="doc_id").execute()
+            self._client.table(_EXTRACTIONS_TABLE).upsert(
+                row, on_conflict="doc_id,doc_type,kind"
+            ).execute()
 
         try:
             await asyncio.to_thread(_upsert)
@@ -99,12 +104,16 @@ class SupabaseStore(DocumentStore):
             ) from exc
         logger.info("stored extraction doc_id=%s", doc_id)
 
-    async def get_extraction(self, doc_id: str) -> ExtractionEnvelope | None:
+    async def get_extraction(
+        self, doc_id: str, doc_type: str, kind: str = "raw"
+    ) -> ExtractionEnvelope | None:
         def _select() -> list[dict]:
             response = (
                 self._client.table(_EXTRACTIONS_TABLE)
                 .select("envelope")
                 .eq("doc_id", doc_id)
+                .eq("doc_type", doc_type)
+                .eq("kind", kind)
                 .limit(1)
                 .execute()
             )

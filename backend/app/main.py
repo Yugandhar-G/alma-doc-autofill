@@ -1,5 +1,9 @@
 """FastAPI app — integration layer. Owns HTTP concerns only;
-extraction/population/storage logic lives in the respective planes."""
+extraction/population/storage logic lives in the respective planes.
+
+PII rule: request/response bodies carry extracted values by design; logs
+never do — documents are referenced by content hash only.
+"""
 import logging
 
 from fastapi import FastAPI, UploadFile
@@ -14,6 +18,7 @@ from app.schemas import (
     ApiResponse,
     DocType,
     ExtractionEnvelope,
+    FieldWarning,
     G28Data,
     PassportData,
 )
@@ -28,6 +33,12 @@ app.add_middleware(
     allow_origins=[settings.frontend_origin],
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+_STORAGE_WARNING = FieldWarning(
+    field="storage",
+    message="The extraction could not be persisted to storage; results are "
+    "shown but no audit record was saved.",
 )
 
 
@@ -49,21 +60,82 @@ async def health() -> ApiResponse:
     )
 
 
-async def _extract_one(upload: UploadFile, doc_type: DocType) -> ExtractionEnvelope | dict:
-    """Extract one uploaded file. Guardrail rejections come back as
-    {"error": ...} so the frontend can pin them to the offending slot."""
-    content = await upload.read()
+async def _read_capped(upload: UploadFile) -> bytes | None:
+    """Read an upload without buffering past the size cap.
+
+    Returns None when the cap is exceeded (checked via Content-Length first,
+    then enforced while chunk-reading in case the header lies).
+    """
     max_bytes = settings.max_file_mb * 1024 * 1024
-    if len(content) > max_bytes:
-        return {"error": f"File exceeds the {settings.max_file_mb} MB limit."}
+    if upload.size is not None and upload.size > max_bytes:
+        return None
+    chunks: list[bytes] = []
+    total = 0
+    while chunk := await upload.read(1024 * 1024):
+        total += len(chunk)
+        if total > max_bytes:
+            return None
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+async def _save_guarded(save_coro, doc_label: str) -> bool:
+    """Persist without letting a storage outage fail a successful extraction."""
+    try:
+        await save_coro
+        return True
+    except Exception:
+        logger.exception("storage persistence failed for %s", doc_label)
+        return False
+
+
+async def _extract_one(
+    upload: UploadFile, doc_type: DocType
+) -> tuple[ExtractionEnvelope | dict, str | None]:
+    """Extract one uploaded file → (envelope | {"error": ...}, doc_id).
+
+    Guardrail rejections come back as {"error": ...} so the frontend can pin
+    them to the offending slot. Storage failures degrade to a warning on the
+    envelope — a working extraction is never discarded over persistence.
+    """
+    content = await _read_capped(upload)
+    if content is None:
+        return {"error": f"File exceeds the {settings.max_file_mb} MB limit."}, None
     try:
         envelope = await extract_document(content, upload.filename or "", doc_type)
     except ValueError as exc:  # guardrail rejection — user-actionable, re-upload
-        return {"error": str(exc)}
+        return {"error": str(exc)}, None
     store = get_store()
-    doc_id = await store.save_document(content, doc_type, upload.filename or "")
-    await store.save_extraction(doc_id, envelope)
-    return envelope
+    doc_id: str | None = None
+    persisted = await _save_guarded(
+        _persist_raw(store, content, doc_type, upload.filename or "", envelope),
+        f"{doc_type} raw",
+    )
+    if persisted:
+        doc_id = envelope.source_hash
+    else:
+        envelope = envelope.model_copy(
+            update={"warnings": [*envelope.warnings, _STORAGE_WARNING]}
+        )
+    return envelope, doc_id
+
+
+async def _persist_raw(
+    store, content: bytes, doc_type: DocType, filename: str, envelope: ExtractionEnvelope
+) -> None:
+    doc_id = await store.save_document(content, doc_type, filename)
+    await store.save_extraction(doc_id, envelope, kind="raw")
+
+
+async def _persist_final(envelope_dump: dict, doc_id: str | None, label: str) -> None:
+    """Persist the record the reviewer actually sees (post-merge/coherence)."""
+    if doc_id is None:
+        return
+    store = get_store()
+    envelope = ExtractionEnvelope.model_validate(envelope_dump)
+    await _save_guarded(
+        store.save_extraction(doc_id, envelope, kind="final"), f"{label} final"
+    )
 
 
 @app.post("/api/extract")
@@ -75,45 +147,58 @@ async def extract(
     """Extract whichever documents were uploaded.
 
     Passport front and back are extracted separately and merged server-side
-    (front authoritative, back fills nulls). A back without a front is
-    rejected — the front carries the machine-readable data.
+    (front authoritative, back fills nulls). Slot-level problems come back
+    under the slot's key so one bad file never discards another's result.
     """
     if passport_front is None and g28 is None:
         return ApiResponse(
-            success=False,
-            error="Upload at least a passport front or a G-28.",
-        )
-    if passport_back is not None and passport_front is None:
-        return ApiResponse(
-            success=False,
-            error="A passport back side was uploaded without a front side.",
+            success=False, error="Upload at least a passport front or a G-28."
         )
     try:
         data: dict = {}
+
+        if passport_back is not None and passport_front is None:
+            data["passport_back"] = {
+                "error": "Not processed — upload the passport front (photo page) "
+                "along with the back."
+            }
+
+        front_doc_id: str | None = None
         if passport_front is not None:
-            front = await _extract_one(passport_front, "passport")
+            front, front_doc_id = await _extract_one(passport_front, "passport")
             if isinstance(front, dict):  # front rejected → slot error, no merge
                 data["passport"] = front
+                if passport_back is not None:
+                    data["passport_back"] = {
+                        "error": "Not processed — the front side was rejected."
+                    }
             else:
                 back: ExtractionEnvelope | None = None
                 if passport_back is not None:
-                    back_result = await _extract_one(passport_back, "passport")
+                    back_result, _ = await _extract_one(passport_back, "passport")
                     if isinstance(back_result, dict):
                         data["passport_back"] = back_result
                     else:
                         back = back_result
                 data["passport"] = merge_passport_envelopes(front, back).model_dump()
+
+        g28_doc_id: str | None = None
         if g28 is not None:
-            g28_result = await _extract_one(g28, "g28")
+            g28_result, g28_doc_id = await _extract_one(g28, "g28")
             data["g28"] = (
                 g28_result if isinstance(g28_result, dict) else g28_result.model_dump()
             )
 
         _attach_coherence_warnings(data)
+
+        # Audit trail of what the reviewer is shown (raw records saved above).
+        if isinstance(data.get("passport"), dict) and "error" not in data["passport"]:
+            await _persist_final(data["passport"], front_doc_id, "passport")
+        if isinstance(data.get("g28"), dict) and "error" not in data["g28"]:
+            await _persist_final(data["g28"], g28_doc_id, "g28")
+
         return ApiResponse(success=True, data=data)
-    except NotImplementedError as exc:
-        return ApiResponse(success=False, error=str(exc))
-    except RuntimeError as exc:  # model/config failures — message is user-safe
+    except RuntimeError as exc:  # model/config failures — message is hash-only
         logger.exception("extraction runtime failure")
         return ApiResponse(success=False, error=str(exc))
     except Exception:
@@ -142,8 +227,6 @@ async def populate(req: PopulateRequest) -> ApiResponse:
     try:
         report = await populate_form(req.passport, req.g28, headed=req.headed)
         return ApiResponse(success=True, data=report.model_dump())
-    except NotImplementedError as exc:
-        return ApiResponse(success=False, error=str(exc))
     except Exception:
         logger.exception("population failed")
         return ApiResponse(success=False, error="Form population failed. Check server logs.")

@@ -32,6 +32,12 @@ from app.schemas import G28Data, PassportData, PopulationReport
 
 logger = logging.getLogger(__name__)
 
+# Budget split for populate_form (fractions of settings.populate_timeout_ms):
+# page navigation gets a quarter; everything else is divided across the write
+# and verify passes. See populate_form's docstring for the full model.
+_GOTO_FRACTION = 0.25
+_MARGIN_FRACTION = 0.1
+
 
 def resolve_source(sources: dict[str, Any], dotted: str) -> Any:
     """Walk a dotted path like 'g28.attorney.city' through nested dicts.
@@ -76,9 +82,10 @@ def _checkbox_intent(spec: FieldSpec, value: Any) -> bool:
 
 def _require_str(spec: FieldSpec, value: Any) -> str:
     if not isinstance(value, str):
+        # No value in the message — it flows into both the report and the log.
         raise TypeError(
             f"{spec.selector}: action {spec.action!r} needs a string source, "
-            f"got {type(value).__name__} ({value!r})"
+            f"got {type(value).__name__}"
         )
     return value
 
@@ -125,8 +132,12 @@ async def _write_all(page: Page, sources: dict[str, Any]) -> list[PendingWrite]:
                 continue
             writes.append(await _apply(page, spec, value))
         except Exception as exc:
+            # Log the failure class only; the full message (which may echo an
+            # extracted value, e.g. a missing select option) goes only to the
+            # user-facing report entry.
             logger.error(
-                "population write failed for %s (%s): %s", spec.selector, spec.source, exc
+                "population write failed for %s (%s): %s",
+                spec.selector, spec.source, type(exc).__name__,
             )
             writes.append(
                 PendingWrite(
@@ -147,15 +158,24 @@ async def populate_form(
 
     ``headed`` None → settings.populate_headed. ``target_url`` None →
     settings.target_form_url (tests point it at the file:// snapshot).
-    The whole run is bounded by settings.populate_timeout_ms; each field
-    action gets an equal slice of that budget so one missing selector
-    cannot starve the rest of the run.
+
+    Budget model (all derived from settings.populate_timeout_ms, no
+    literals): goto gets _GOTO_FRACTION of the budget; the remainder is
+    split across TWO passes over FIELD_MAP (write, then verify read-back),
+    since a stalled selector costs its slice in each pass. The outer
+    timeout is the sum of those parts plus _MARGIN_FRACTION, so worst-case
+    per-field stalls still end with a full report instead of a mid-run
+    TimeoutError that loses everything.
     """
     settings = get_settings()
     url = target_url if target_url is not None else settings.target_form_url
     run_headed = settings.populate_headed if headed is None else headed
     timeout_ms = settings.populate_timeout_ms
-    per_action_ms = timeout_ms // len(FIELD_MAP)
+    goto_ms = int(timeout_ms * _GOTO_FRACTION)
+    per_action_ms = max(1, (timeout_ms - goto_ms) // (2 * len(FIELD_MAP)))
+    outer_seconds = (
+        (goto_ms + 2 * len(FIELD_MAP) * per_action_ms) * (1 + _MARGIN_FRACTION) / 1000
+    )
 
     sources: dict[str, Any] = {
         "passport": passport.model_dump() if passport is not None else None,
@@ -163,13 +183,13 @@ async def populate_form(
     }
 
     logger.info("populating %s (headed=%s, %d specs)", url, run_headed, len(FIELD_MAP))
-    async with asyncio.timeout(timeout_ms / 1000):
+    async with asyncio.timeout(outer_seconds):
         async with async_playwright() as playwright:
             browser = await playwright.chromium.launch(headless=not run_headed)
             try:
                 page = await browser.new_page()
                 page.set_default_timeout(per_action_ms)
-                await page.goto(url, timeout=timeout_ms)
+                await page.goto(url, timeout=goto_ms)
                 writes = await _write_all(page, sources)
                 report = await verify_and_report(page, url, writes)
             finally:

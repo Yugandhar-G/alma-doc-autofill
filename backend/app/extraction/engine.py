@@ -44,6 +44,19 @@ def _all_fields_null(value: Any) -> bool:
     return value is None
 
 
+def _safe_error_summary(exc: Exception) -> str:
+    """PII-safe diagnostics: field paths and error types only — never input
+    values. str(ValidationError) embeds input_value=<raw model output>, which
+    would leak extracted PII into logs and API error responses."""
+    if isinstance(exc, ValidationError):
+        parts = [
+            f"{'.'.join(str(loc) for loc in error['loc']) or '<root>'}:{error['type']}"
+            for error in exc.errors(include_input=False, include_url=False)
+        ]
+        return "; ".join(parts) or exc.title
+    return type(exc).__name__
+
+
 async def _call_gemini(
     client: genai.Client,
     model: str,
@@ -67,7 +80,6 @@ async def _call_gemini(
         response_schema=wrapper,
     )
     attempts = settings.extraction_max_retries + 1
-    last_error: Exception | None = None
     for attempt in range(1, attempts + 1):
         response = await client.aio.models.generate_content(
             model=model, contents=[prompt, *parts], config=config
@@ -78,14 +90,20 @@ async def _call_gemini(
         try:
             return wrapper.model_validate_json(response.text or "")
         except (ValidationError, ValueError) as exc:
-            last_error = exc
+            # PII rule: never log or raise str(exc) — ValidationError text
+            # embeds input_value fragments of the model's raw output.
+            issues = (
+                [(e["loc"], e["type"]) for e in exc.errors(include_input=False)][:5]
+                if isinstance(exc, ValidationError)
+                else type(exc).__name__
+            )
             logger.warning(
-                "unparseable model output source_hash=%s model=%s attempt=%d/%d",
-                source_hash, model, attempt, attempts,
+                "unparseable model output source_hash=%s model=%s attempt=%d/%d issues=%s",
+                source_hash, model, attempt, attempts, issues,
             )
     raise RuntimeError(
         f"Gemini model {model!r} returned output that failed schema validation "
-        f"{attempts} time(s) for document {source_hash}. Last error: {last_error}"
+        f"{attempts} time(s) for document {source_hash}. See server logs."
     )
 
 
