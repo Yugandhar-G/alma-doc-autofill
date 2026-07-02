@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+/* Design tokens — warm legal-paper light theme. One accent, used semantically
+   for primary actions and progress; amber/red/green reserved for status. */
+@theme {
+  --color-paper: #f7f5f0;
+  --color-surface: #ffffff;
+  --color-ink: #1c2733;
+  --color-ink-soft: #5b6876;
+  --color-ink-faint: #8b96a3;
+  --color-line: #e4dfd4;
+  --color-line-strong: #cfc8b8;
+  --color-accent: #0f766e;
+  --color-accent-deep: #0b5952;
+  --color-accent-wash: #ecf5f3;
+  --color-warn: #b45309;
+  --color-warn-wash: #fef3e2;
+  --color-danger: #b91c1c;
+  --color-danger-wash: #fdecec;
+  --color-good: #15803d;
+  --color-good-wash: #eaf6ee;
+
+  --font-display: var(--font-fraunces), serif;
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+}
+
+body {
+  background:
+    radial-gradient(1200px 500px at 85% -10%, #efe9db 0%, transparent 60%),
+    var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #fff;
+}
