@@ -1,0 +1,28 @@
+# Coding-Agent Usage — alma-doc-autofill
+
+*How I directed the agent that built this. Raw evidence (verbatim prompts, corrections, timestamps): [agent-usage-log.md](agent-usage-log.md).*
+
+## Planning & design
+
+I spent my thinking time before the agent touched code: I wrote a master brief with the architecture (three planes: extract, review, populate), the extraction prompt contract (absent/N-A/illegible → null, never guess; normalize dates/states/sex at extraction time), the golden-test values for the example G-28, and hard constraints (never submit or sign, review table is core product, not polish). The agent's first useful act was pushing back on my brief: it fetched the target form's DOM before accepting the plan and found five discrepancies — including a planted duplicate-id trap (Part 3 First and Middle Name share `id="passport-given-names"`) and my incorrect claim that state options use full-name values (they're 2-letter codes, so `select_option` must match by label). The plan was amended before any code existed. Architecture decisions stayed mine: the agent asked before every architectural call (LLM vendor, Supabase vs local storage, Vercel vs local, front/back passport UX), and I ruled on each — including rejecting its Vercel-hostable populate idea because Playwright can't run there.
+
+## Prompting & orchestration
+
+The build ran as contracts-first parallel agent loops. Phase 0 (sequential): PII-safe .gitignore as the first commit, then the frozen interfaces — Pydantic schemas, the prompt contract, an allow-list `FIELD_MAP` encoding all five recon findings, a 3-method storage interface. Phase 1: three subagents launched in parallel with hard ownership boundaries (extraction plane / population plane / Next.js frontend), each prompt specifying frozen files, verification it must run itself, and a "report deviations with reasoning" clause. No agent could commit; the orchestrator reviewed each diff. Corrections went back through the same loop (`SendMessage` to the same agent with evidence) rather than being patched over its head, so the agent that made the error fixed it and reran its own tests.
+
+## The back-and-forth (what the agents got wrong)
+
+- **The fax trap (best catch).** The extraction agent asserted `daytime_phone = "1650123456"` in the golden test, reasoning from the PDF's raw text-layer order. Positional analysis (label rect → words beneath it) proved that value belongs to *Fax Number* — a field our schema deliberately drops — and the daytime field is blank. One wrong assertion would have gated the whole pipeline on misattributing a fax number. The agent's fix added a negative test: the fax value must appear in *no* field.
+- **Cross-session collision.** My frontend agent deleted a competing wizard flow another session had built, unilaterally resolving a human design decision in its own favor. I escalated to a user ruling (front+back passport with re-upload prompts) instead of letting the deletion stand, and committed surviving work immediately — uncommitted agent output is one `rm` away from gone.
+- **Environment before agents.** The first dependency install silently used Python 3.10 against a 3.11+ project and churned for 8 minutes; caught by inspecting the process, rebuilt with uv/3.13 in seconds — before three agents built on a broken env.
+- **Adversarial review found what tests didn't.** A dedicated review agent (told to verify empirically, not speculate) found 9 real defects in the seams the parallel agents didn't own: PII leaking into logs via pydantic `ValidationError` strings, a timeout budget that could cancel a run and lose the report, storage records that clobbered when identical bytes hit two slots, and a size cap enforced only after buffering the full upload.
+
+## Testing
+
+The golden test was written before the extraction engine and encodes the traps as assertions (`apt_ste_flr: None` for "N/A", daytime null, fax nowhere); it ran live against Gemini and passed 25/25, then cached the extraction so iteration is free. Population has 12 offline tests against a committed form snapshot (file://, no network) — including proof the middle name lands in the *second* duplicate-id input without clobbering the first. Six seam tests fake extraction/storage to pin the API's response shapes. End-to-end, verified with real data: example G-28 PDF → live Gemini → live form = 17 filled, 0 mismatches, 0 errors, with the post-fill read-back diffing every field.
+
+## Review
+
+Nothing was accepted on an agent's word: I reran every agent's test suite myself, read the load-bearing files line-by-line, and re-verified its claims against sources (the fax value against the PDF, model ids against Google's docs). Safety is structural, not behavioral: the fill routine iterates an allow-list that simply doesn't contain submit/sign/Part 4–5 selectors, a test asserts no `.click()` exists in population code, and grep confirms signature ids appear nowhere in the fill path. Keys live in `.env` (never committed; uploads and fixtures are gitignored from commit one), and logs reference documents by content hash only — the review agent caught the two places extracted values could have leaked into logs, and both are fixed and tested.
+
+**Path to production.** This miniaturizes what I'd build at scale: golden-set evals gating every model/prompt change in CI, multi-signal confidence (deterministic MRZ checksums + dual-model challenge — not logprobs, which measurably fail for extraction confidence) routing documents between auto-accept and field-flagged human review, and the review queue's corrections feeding the eval set. Since attorneys must review filings anyway, the metric worth optimizing is review-seconds per document, not straight-through automation.
