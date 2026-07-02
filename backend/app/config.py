@@ -10,8 +10,11 @@ class Settings(BaseSettings):
 
     # Vision extraction
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-3-flash"          # default tier; Agent A verifies current id
-    gemini_model_escalation: str = "gemini-3-pro" # used when default returns null-heavy result
+    # Model ids verified against https://ai.google.dev/gemini-api/docs/models (2026-07-01):
+    # gemini-3.5-flash is the current stable flash-tier model; gemini-3.1-pro-preview is
+    # the current recommended pro-tier id (there is no stable 3.x pro id as of that date).
+    gemini_model: str = "gemini-3.5-flash"
+    gemini_model_escalation: str = "gemini-3.1-pro-preview"  # used when default returns null-heavy result
     extraction_temperature: float = 0.0
     extraction_max_retries: int = 1
 

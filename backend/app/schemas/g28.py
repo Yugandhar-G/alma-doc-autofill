@@ -19,8 +19,16 @@ class AttorneyInfo(BaseModel):
     state: str | None = Field(None, description="Full US state name, e.g. 'California'")
     zip_code: str | None = None
     country: str | None = Field(None, description="Full English country name")
-    daytime_phone: str | None = None
-    mobile_phone: str | None = None
+    daytime_phone: str | None = Field(
+        None,
+        description="Item 4 Daytime Telephone Number only. Blank → null. "
+        "Never the fax number — fax is not extracted.",
+    )
+    mobile_phone: str | None = Field(
+        None,
+        description="Item 5 Mobile Telephone Number only. Blank or N/A → null. "
+        "Never the fax or daytime number.",
+    )
     email: str | None = None
 
 

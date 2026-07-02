@@ -14,6 +14,7 @@ validation into PassportData / G28Data → post-validators (ISO date,
 state enum, sex enum; failures null the field and add a FieldWarning)
 → ExtractionEnvelope.
 """
+from .coherence import check_coherence
 from .engine import extract_document
 
-__all__ = ["extract_document"]
+__all__ = ["check_coherence", "extract_document"]
