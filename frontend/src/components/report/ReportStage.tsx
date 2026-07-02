@@ -2,7 +2,7 @@
 
 import { Banner } from "@/components/ui/Banner";
 import { Button } from "@/components/ui/Button";
-import { HUMAN_NOTE } from "@/lib/config";
+import { API_BASE, HUMAN_NOTE } from "@/lib/config";
 import type { PopulationEntry, PopulationReport } from "@/lib/types";
 
 type Props = {
@@ -113,8 +113,8 @@ export function ReportStage({ report, onBackToReview, onRestart }: Props) {
           <strong className="font-semibold">
             Do not trust this fill — {issueCount} field{issueCount === 1 ? "" : "s"} did not verify.
           </strong>{" "}
-          The rows marked below read back differently than expected or failed outright. Inspect
-          them in the browser window on the backend machine before going further. Target:{" "}
+          The rows marked below read back differently than expected or failed outright. Check
+          them against the captured copy of the filled form before going further. Target:{" "}
           <a
             className="underline underline-offset-2"
             href={report.target_url}
@@ -167,9 +167,29 @@ export function ReportStage({ report, onBackToReview, onRestart }: Props) {
         <Button variant="ghost" onClick={onRestart}>
           Start over
         </Button>
-        <Button variant="secondary" onClick={onBackToReview}>
-          Back to review
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="secondary" onClick={onBackToReview}>
+            Back to review
+          </Button>
+          {report.artifact_id && (
+            <>
+              <a
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-line-strong bg-surface px-5 py-2.5 text-sm font-medium text-ink transition-colors duration-150 hover:border-accent hover:text-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                href={`${API_BASE}/api/population-artifact/${report.artifact_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View filled form
+              </a>
+              <a
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                href={`${API_BASE}/api/population-artifact/${report.artifact_id}?download=1`}
+              >
+                Download ({report.artifact_kind === "png" ? "image" : "PDF"})
+              </a>
+            </>
+          )}
+        </div>
       </footer>
     </section>
   );

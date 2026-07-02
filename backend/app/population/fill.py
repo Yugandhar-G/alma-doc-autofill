@@ -20,6 +20,7 @@ from typing import Any
 from playwright.async_api import Page, async_playwright
 
 from app.config import get_settings
+from app.population.artifact import capture_artifact, save_artifact
 from app.population.field_map import FIELD_MAP, FieldSpec
 from app.population.verify import (
     CHECKED,
@@ -147,6 +148,21 @@ async def _write_all(page: Page, sources: dict[str, Any]) -> list[PendingWrite]:
     return writes
 
 
+async def _attach_artifact(
+    report: PopulationReport, page: Page, run_headed: bool
+) -> PopulationReport:
+    """Capture the filled form (PDF headless / PNG headed) so the user has a
+    downloadable record after the browser closes. Capture failure degrades
+    to a report without a download link — it never fails the population."""
+    try:
+        data, kind = await capture_artifact(page, run_headed)
+        artifact_id = save_artifact(data, kind)
+    except Exception:
+        logger.exception("artifact capture failed; report will have no download")
+        return report
+    return report.model_copy(update={"artifact_id": artifact_id, "artifact_kind": kind})
+
+
 async def populate_form(
     passport: PassportData | None,
     g28: G28Data | None,
@@ -192,6 +208,7 @@ async def populate_form(
                 await page.goto(url, timeout=goto_ms)
                 writes = await _write_all(page, sources)
                 report = await verify_and_report(page, url, writes)
+                report = await _attach_artifact(report, page, run_headed)
             finally:
                 await browser.close()
 

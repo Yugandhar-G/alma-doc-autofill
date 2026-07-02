@@ -12,6 +12,7 @@ backend/tests/.extraction_cache/
 
 # Internal strategy notes (not part of the deliverable)
 Alma_Assignment_Master_Brief.md
+LOOM_SCRIPT.md
 
 # Python
 __pycache__/

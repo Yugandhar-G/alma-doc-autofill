@@ -45,6 +45,7 @@ Local-first document automation pipeline: upload passport + G-28 → vision-LLM 
 | Storage | Supabase with automatic local fallback | User decision; fallback preserves the assignment's "minimal setup" requirement |
 | Deploy | local only, Vercel later | Playwright can't run on Vercel serverless; assignment requires local anyway |
 | Config | everything in `app/config.py` / env | no hardcoded model ids, URLs, caps, or thresholds at call sites |
+| Observability | Langfuse (`app/observability.py`), no-op unless `LANGFUSE_*` keys set | Traces per request (grouped by frontend `X-Session-Id`), Gemini generation spans with token usage, UI events via `/api/telemetry`. PII-redacted by design: hashes, timings, counts, and field statistics only — never images, prompts' page content, or extracted values |
 
 ## Target-form traps (verified by DOM recon before any code)
 

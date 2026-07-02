@@ -39,6 +39,12 @@ class PopulationReport(BaseModel):
     mismatches: int = 0
     errors: int = 0
     ok: bool = False
+    artifact_id: str | None = Field(
+        None,
+        description="Content hash of the captured filled-form artifact; "
+        "download via GET /api/population-artifact/{artifact_id}",
+    )
+    artifact_kind: Literal["pdf", "png"] | None = None
 
 
 class ApiResponse(BaseModel):

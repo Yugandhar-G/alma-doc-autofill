@@ -180,6 +180,25 @@ def test_missing_g28_document_skips_all_g28_fields() -> None:
     assert entry_for(report, "#passport-surname").status == "filled"
 
 
+def test_artifact_captured_and_downloadable(report: PopulationReport) -> None:
+    """A headless run must persist a real PDF of the filled form, keyed by
+    content hash, retrievable through the artifact resolver."""
+    from app.population.artifact import stored_artifact_path
+
+    assert report.artifact_kind == "pdf"
+    assert report.artifact_id is not None and len(report.artifact_id) == 64
+    path = stored_artifact_path(report.artifact_id)
+    assert path is not None and path.exists()
+    assert path.read_bytes().startswith(b"%PDF")
+
+
+def test_artifact_resolver_rejects_non_hash_ids() -> None:
+    from app.population.artifact import stored_artifact_path
+
+    for bad in ("../../etc/passwd", "zz" * 32, "a" * 63, "", "a" * 64 + "/x"):
+        assert stored_artifact_path(bad) is None
+
+
 def test_field_map_contains_no_signature_or_submit_selectors() -> None:
     selector_union = " ".join(spec.selector for spec in FIELD_MAP)
     for fragment in FORBIDDEN_SELECTOR_FRAGMENTS:

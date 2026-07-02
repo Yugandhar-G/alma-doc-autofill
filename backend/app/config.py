@@ -34,13 +34,21 @@ class Settings(BaseSettings):
     # PDF rendering
     render_dpi: int = 220
 
-    # Population
+    # Population. Headless is the default: it yields the downloadable PDF
+    # artifact instead of a browser window that closes the moment the run
+    # ends. Set POPULATE_HEADED=true to watch the fill live (the artifact
+    # then degrades to a full-page PNG — Chromium prints PDFs headless-only).
     target_form_url: str = "https://mendrika-alma.github.io/form-submission/"
-    populate_headed: bool = True
+    populate_headed: bool = False
     populate_timeout_ms: int = 60_000
 
     # Frontend origin for CORS
     frontend_origin: str = "http://localhost:3000"
+
+    # Observability (Langfuse) — tracing is a no-op until both keys are set.
+    langfuse_public_key: str | None = None
+    langfuse_secret_key: str | None = None
+    langfuse_host: str = "https://cloud.langfuse.com"
 
     def require_gemini_key(self) -> str:
         if not self.gemini_api_key:
@@ -52,6 +60,10 @@ class Settings(BaseSettings):
     @property
     def supabase_enabled(self) -> bool:
         return bool(self.supabase_url and self.supabase_service_key)
+
+    @property
+    def langfuse_enabled(self) -> bool:
+        return bool(self.langfuse_public_key and self.langfuse_secret_key)
 
 
 @lru_cache
