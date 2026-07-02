@@ -9,9 +9,16 @@ type Props = {
   slotNumber: string;
   title: string;
   description: string;
+  /** Small requirement pill in the header, e.g. "Required" or "Optional". */
+  badge?: string;
   file: File | null;
   kind: FileKind | null;
+  /** Hard failure — red, demands a re-upload. */
   error: string | null;
+  /** Soft caution — amber, the flow can continue. */
+  notice?: string | null;
+  /** Subtle informational footnote, e.g. which fields the back side filled. */
+  infoNote?: string | null;
   isDisabled: boolean;
   onSelect: (file: File) => void;
   onClear: () => void;
@@ -45,9 +52,12 @@ export function UploadSlot({
   slotNumber,
   title,
   description,
+  badge,
   file,
   kind,
   error,
+  notice = null,
+  infoNote = null,
   isDisabled,
   onSelect,
   onClear,
@@ -55,6 +65,13 @@ export function UploadSlot({
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const isImage = kind === "jpeg" || kind === "png";
+  const borderClass = isDragOver
+    ? "border-accent bg-accent-wash"
+    : error
+      ? "border-danger/50"
+      : notice
+        ? "border-warn/50"
+        : "border-line";
 
   const handleDrop = (e: DragEvent) => {
     e.preventDefault();
@@ -72,9 +89,7 @@ export function UploadSlot({
       }}
       onDragLeave={() => setIsDragOver(false)}
       onDrop={handleDrop}
-      className={`flex flex-col rounded-xl border bg-surface shadow-[0_1px_2px_rgba(28,39,51,0.04)] transition-colors duration-150 ${
-        isDragOver ? "border-accent bg-accent-wash" : "border-line"
-      }`}
+      className={`flex flex-col rounded-xl border bg-surface shadow-[0_1px_2px_rgba(28,39,51,0.04)] transition-colors duration-150 ${borderClass}`}
     >
       <input
         ref={inputRef}
@@ -92,6 +107,11 @@ export function UploadSlot({
       <div className="flex items-baseline gap-3 border-b border-line px-5 py-3.5">
         <span className="font-mono text-xs text-ink-faint">{slotNumber}</span>
         <h3 className="font-display text-lg">{title}</h3>
+        {badge && (
+          <span className="ml-auto rounded-full border border-line px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
+            {badge}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-3 p-5">
@@ -166,10 +186,22 @@ export function UploadSlot({
         )}
 
         {error && (
-          <p role="alert" className="text-xs leading-relaxed text-danger">
+          <p
+            role="alert"
+            className="rounded-md border border-danger/30 bg-danger-wash px-3 py-2 text-xs font-medium leading-relaxed text-danger"
+          >
             {error}
           </p>
         )}
+        {notice && (
+          <p
+            role="status"
+            className="rounded-md border border-warn/30 bg-warn-wash px-3 py-2 text-xs leading-relaxed text-warn"
+          >
+            {notice}
+          </p>
+        )}
+        {infoNote && <p className="text-xs italic leading-relaxed text-ink-soft">{infoNote}</p>}
         <p className="text-xs leading-relaxed text-ink-faint">{description}</p>
       </div>
     </div>

@@ -173,7 +173,10 @@ export type SlotResult =
   | { kind: "rejected"; error: string };
 
 export interface ExtractionResult {
+  /** Merged passport envelope (front authoritative, back fills nulls) or the front's guardrail rejection. */
   passport: SlotResult | null;
+  /** Set only when the back side itself was rejected; the front's envelope still arrives in `passport`. */
+  passportBackError: string | null;
   g28: SlotResult | null;
 }
 

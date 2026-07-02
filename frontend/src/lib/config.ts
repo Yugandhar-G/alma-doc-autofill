@@ -11,9 +11,15 @@ export const API_BASE =
 export const MAX_FILE_MB = 10;
 export const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 
-/** File-picker accept attribute for both upload slots. */
+/** File-picker accept attribute for all upload slots. */
 export const FILE_ACCEPT =
   ".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png";
+
+/**
+ * When the merged passport extraction yields this many readable fields or
+ * fewer, prompt for a sharper re-upload before letting the user continue.
+ */
+export const PASSPORT_LOW_FIELD_THRESHOLD = 2;
 
 /** The live form the backend fills — shown for context, never fetched here. */
 export const HUMAN_NOTE =

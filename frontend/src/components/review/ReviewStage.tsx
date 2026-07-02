@@ -6,14 +6,13 @@ import type { FieldValue } from "@/components/review/FieldRow";
 import { SectionCard } from "@/components/review/SectionCard";
 import { Banner } from "@/components/ui/Banner";
 import { Button } from "@/components/ui/Button";
-import { nameConflicts } from "@/lib/coherence";
 import {
   ATTORNEY_FIELDS,
   BENEFICIARY_FIELDS,
   ELIGIBILITY_FIELDS,
   PASSPORT_FIELDS,
 } from "@/lib/fields";
-import { fieldWarning, warningsByField } from "@/lib/review";
+import { backWarning, describeDetectedType, fieldWarning, warningsByField } from "@/lib/review";
 import type { ExtractionEnvelope, G28Data, PassportData } from "@/lib/types";
 
 type G28Section = keyof G28Data;
@@ -31,15 +30,8 @@ type Props = {
   onRestart: () => void;
 };
 
-const DOC_LABEL: Record<string, string> = {
-  passport: "a passport",
-  g28: "a Form G-28",
-  other: "a different kind of document",
-  unknown: "unrecognizable",
-};
-
 function MismatchBanner({ envelope, slotName }: { envelope: ExtractionEnvelope; slotName: string }) {
-  const detected = DOC_LABEL[envelope.document_type_detected] ?? envelope.document_type_detected;
+  const detected = describeDetectedType(envelope.document_type_detected);
   return (
     <Banner tone="danger">
       <strong className="font-semibold">Wrong document in the {slotName} slot.</strong> The file
@@ -63,7 +55,7 @@ export function ReviewStage({
 }: Props) {
   const passportWarnings = useMemo(() => warningsByField(passportEnvelope), [passportEnvelope]);
   const g28Warnings = useMemo(() => warningsByField(g28Envelope), [g28Envelope]);
-  const conflicts = useMemo(() => nameConflicts(passport, g28), [passport, g28]);
+  const backMergeNote = backWarning(passportEnvelope, "merge");
 
   const passportMismatch =
     passportEnvelope !== null && passportEnvelope.document_type_detected !== "passport";
@@ -89,21 +81,6 @@ export function ReviewStage({
         <MismatchBanner envelope={passportEnvelope} slotName="passport" />
       )}
       {g28Mismatch && g28Envelope && <MismatchBanner envelope={g28Envelope} slotName="G-28" />}
-
-      {conflicts.length > 0 && (
-        <Banner tone="warn">
-          <strong className="font-semibold">The passport and G-28 disagree on the client&rsquo;s name.</strong>
-          <ul className="mt-1 list-inside list-disc">
-            {conflicts.map((c) => (
-              <li key={c.label}>
-                {c.label}: passport says <span className="font-mono">&ldquo;{c.passportValue}&rdquo;</span>,
-                G-28 beneficiary says <span className="font-mono">&ldquo;{c.g28Value}&rdquo;</span>
-              </li>
-            ))}
-          </ul>
-          Confirm these belong to the same person before populating.
-        </Banner>
-      )}
 
       {g28 && (
         <>
@@ -135,15 +112,20 @@ export function ReviewStage({
       )}
 
       {passport && (
-        <SectionCard
-          partLabel="Passport"
-          title="Machine-readable data page"
-          subtitle="Feeds the client identity fields in Part 3 of the form. Dates are ISO (YYYY-MM-DD)."
-          fields={PASSPORT_FIELDS}
-          values={passport as unknown as Record<string, FieldValue>}
-          warningFor={(key) => fieldWarning(passportWarnings, key)}
-          onField={(key, v) => onPassportChange({ ...passport, [key]: v })}
-        />
+        <div className="flex flex-col gap-2">
+          <SectionCard
+            partLabel="Passport"
+            title="Machine-readable data page"
+            subtitle="Merged from both sides — front authoritative, back fills gaps. Dates are ISO (YYYY-MM-DD)."
+            fields={PASSPORT_FIELDS}
+            values={passport as unknown as Record<string, FieldValue>}
+            warningFor={(key) => fieldWarning(passportWarnings, key)}
+            onField={(key, v) => onPassportChange({ ...passport, [key]: v })}
+          />
+          {backMergeNote && (
+            <p className="px-1 text-xs italic leading-relaxed text-ink-soft">{backMergeNote}</p>
+          )}
+        </div>
       )}
 
       {!g28 && (

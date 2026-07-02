@@ -57,25 +57,31 @@ function toSlotResult(slot: Record<string, unknown> | undefined | null): SlotRes
 }
 
 /**
- * Send whichever documents were uploaded (at least one) in a single
- * multipart request and return the per-slot outcomes.
+ * Send whichever documents were uploaded in a single multipart request.
+ * The backend merges passport front + back server-side (front authoritative,
+ * back fills nulls) and returns one `passport` envelope; a rejected back side
+ * arrives separately as `passport_back: {error}` without sinking the front.
  */
 export async function extractDocuments(files: {
-  passport: File | null;
+  passportFront: File | null;
+  passportBack: File | null;
   g28: File | null;
 }): Promise<ExtractionResult> {
   const form = new FormData();
-  if (files.passport) form.append("passport", files.passport);
+  if (files.passportFront) form.append("passport_front", files.passportFront);
+  if (files.passportBack) form.append("passport_back", files.passportBack);
   if (files.g28) form.append("g28", files.g28);
 
   const res = await request("/api/extract", { method: "POST", body: form });
   const data = await parseEnvelope<Record<string, Record<string, unknown>>>(res);
 
+  const backSlot = toSlotResult(data.passport_back);
   const result: ExtractionResult = {
     passport: toSlotResult(data.passport),
+    passportBackError: backSlot?.kind === "rejected" ? backSlot.error : null,
     g28: toSlotResult(data.g28),
   };
-  if (files.passport && result.passport === null) {
+  if (files.passportFront && result.passport === null) {
     throw new ApiError("The backend response was missing the passport extraction result.");
   }
   if (files.g28 && result.g28 === null) {
