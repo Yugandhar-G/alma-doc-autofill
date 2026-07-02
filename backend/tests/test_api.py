@@ -194,3 +194,40 @@ def test_no_files_rejected(client):
     body = resp.json()
     assert body["success"] is False
     assert "at least" in body["error"]
+
+
+def test_artifact_download_unknown_id_is_404(client):
+    resp = client.get("/api/population-artifact/" + "a" * 64)
+    assert resp.status_code == 404
+    body = resp.json()
+    assert body["success"] is False
+    assert "artifact" in body["error"].lower()
+
+
+def test_artifact_download_rejects_malformed_ids(client):
+    # Traversal-shaped and non-hash ids must 404 without touching the fs
+    # (an embedded slash is a different route → 404 from the router itself).
+    for bad in ("A" * 64, "zz", "%2e%2e%2fetc%2fpasswd"):
+        resp = client.get(f"/api/population-artifact/{bad}")
+        assert resp.status_code == 404, bad
+
+
+def test_artifact_serves_pdf_inline_for_viewing(client, tmp_path, monkeypatch):
+    artifact = tmp_path / ("b" * 64 + ".a28.pdf")
+    artifact.write_bytes(b"%PDF-1.4 fake artifact")
+    monkeypatch.setattr(m, "stored_artifact_path", lambda _id: artifact)
+    resp = client.get("/api/population-artifact/" + "b" * 64)
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "application/pdf"
+    assert resp.headers["content-disposition"].startswith("inline")
+    assert resp.content.startswith(b"%PDF")
+
+
+def test_artifact_download_param_forces_attachment(client, tmp_path, monkeypatch):
+    artifact = tmp_path / ("b" * 64 + ".a28.pdf")
+    artifact.write_bytes(b"%PDF-1.4 fake artifact")
+    monkeypatch.setattr(m, "stored_artifact_path", lambda _id: artifact)
+    resp = client.get("/api/population-artifact/" + "b" * 64 + "?download=1")
+    assert resp.status_code == 200
+    assert resp.headers["content-disposition"].startswith("attachment")
+    assert "a28-filled.pdf" in resp.headers["content-disposition"]

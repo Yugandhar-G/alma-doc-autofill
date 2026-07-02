@@ -16,6 +16,7 @@ dependencies = [
     "playwright>=1.46",
     "supabase>=2.6",
     "rapidfuzz>=3.9",
+    "langfuse>=4.0",
 ]
 
 [project.optional-dependencies]

@@ -15,6 +15,7 @@ from pydantic import BaseModel, ValidationError, create_model
 
 from app.config import Settings, get_settings
 from app.extraction import prompts, render
+from app.observability import llm_generation, record_usage
 from app.extraction.quality import assert_page_quality
 from app.extraction.validators import validate_g28, validate_passport
 from app.schemas import DocType, ExtractionEnvelope, FieldWarning, G28Data, PassportData
@@ -81,9 +82,21 @@ async def _call_gemini(
     )
     attempts = settings.extraction_max_retries + 1
     for attempt in range(1, attempts + 1):
-        response = await client.aio.models.generate_content(
-            model=model, contents=[prompt, *parts], config=config
-        )
+        # Trace carries hash/pages/tokens only — never page images or output values.
+        with llm_generation(
+            "gemini.extract",
+            model=model,
+            metadata={
+                "source_hash": source_hash,
+                "pages": len(png_pages),
+                "attempt": attempt,
+                "temperature": settings.extraction_temperature,
+            },
+        ) as generation:
+            response = await client.aio.models.generate_content(
+                model=model, contents=[prompt, *parts], config=config
+            )
+            record_usage(generation, getattr(response, "usage_metadata", None))
         parsed = response.parsed
         if isinstance(parsed, wrapper):
             return parsed

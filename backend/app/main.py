@@ -5,15 +5,26 @@ PII rule: request/response bodies carry extracted values by design; logs
 never do — documents are referenced by content hash only.
 """
 import logging
+from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, UploadFile
+from fastapi import FastAPI, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel, Field
 
 from app.config import get_settings
 from app.extraction import check_coherence, extract_document
 from app.merge import merge_passport_envelopes
+from app.observability import (
+    envelope_stats,
+    flush as observability_flush,
+    record_frontend_event,
+    report_stats,
+    request_trace,
+    TelemetryValue,
+)
 from app.population import populate_form
+from app.population.artifact import stored_artifact_path
 from app.schemas import (
     ApiResponse,
     DocType,
@@ -27,7 +38,13 @@ from app.storage.base import get_store
 logger = logging.getLogger("alma")
 settings = get_settings()
 
-app = FastAPI(title="alma-doc-autofill")
+@asynccontextmanager
+async def _lifespan(_: FastAPI):
+    yield
+    observability_flush()  # drain the trace export queue on shutdown
+
+
+app = FastAPI(title="alma-doc-autofill", lifespan=_lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_origin],
@@ -140,6 +157,7 @@ async def _persist_final(envelope_dump: dict, doc_id: str | None, label: str) ->
 
 @app.post("/api/extract")
 async def extract(
+    request: Request,
     passport_front: UploadFile | None = None,
     passport_back: UploadFile | None = None,
     g28: UploadFile | None = None,
@@ -155,6 +173,15 @@ async def extract(
             success=False, error="Upload at least a passport front or a G-28."
         )
     try:
+      with request_trace(
+          "extract",
+          request.headers.get("x-session-id"),
+          metadata={
+              "slot_passport_front": passport_front is not None,
+              "slot_passport_back": passport_back is not None,
+              "slot_g28": g28 is not None,
+          },
+      ) as trace:
         data: dict = {}
 
         if passport_back is not None and passport_front is None:
@@ -197,6 +224,20 @@ async def extract(
         if isinstance(data.get("g28"), dict) and "error" not in data["g28"]:
             await _persist_final(data["g28"], g28_doc_id, "g28")
 
+        if trace is not None:
+            output: dict = {}
+            for key in ("passport", "passport_back", "g28"):
+                slot = data.get(key)
+                if isinstance(slot, dict):
+                    # Rejection reasons are fixed guardrail templates (size,
+                    # blur, page cap, wrong type) — they name limits, never
+                    # document content, so they are safe in the trace.
+                    output[key] = (
+                        {"rejected": True, "reason": slot["error"]}
+                        if "error" in slot
+                        else envelope_stats(slot)
+                    )
+            trace.update(output=output)
         return ApiResponse(success=True, data=data)
     except RuntimeError as exc:  # model/config failures — message is hash-only
         logger.exception("extraction runtime failure")
@@ -221,12 +262,70 @@ def _attach_coherence_warnings(data: dict) -> None:
 
 
 @app.post("/api/populate")
-async def populate(req: PopulateRequest) -> ApiResponse:
+async def populate(request: Request, req: PopulateRequest) -> ApiResponse:
     if req.passport is None and req.g28 is None:
         return ApiResponse(success=False, error="Nothing to populate.")
     try:
-        report = await populate_form(req.passport, req.g28, headed=req.headed)
-        return ApiResponse(success=True, data=report.model_dump())
+        with request_trace(
+            "populate",
+            request.headers.get("x-session-id"),
+            metadata={
+                "has_passport": req.passport is not None,
+                "has_g28": req.g28 is not None,
+            },
+        ) as trace:
+            report = await populate_form(req.passport, req.g28, headed=req.headed)
+            if trace is not None:
+                trace.update(output=report_stats(report))
+            return ApiResponse(success=True, data=report.model_dump())
     except Exception:
         logger.exception("population failed")
         return ApiResponse(success=False, error="Form population failed. Check server logs.")
+
+
+_ARTIFACT_MEDIA_TYPES = {".pdf": "application/pdf", ".png": "image/png"}
+
+
+@app.get("/api/population-artifact/{artifact_id}")
+async def population_artifact(artifact_id: str, download: bool = False):
+    """Serve the captured filled-form artifact (PDF or PNG).
+
+    Inline by default so the browser renders it in a tab; ``?download=1``
+    switches to attachment. The id is a bare content hash; anything else
+    resolves to None inside stored_artifact_path, so no path input ever
+    reaches the filesystem.
+    """
+    path = stored_artifact_path(artifact_id)
+    if path is None:
+        return JSONResponse(
+            status_code=404,
+            content=ApiResponse(
+                success=False, error="No such artifact. Populate the form first."
+            ).model_dump(),
+        )
+    return FileResponse(
+        path,
+        media_type=_ARTIFACT_MEDIA_TYPES[path.suffix],
+        filename=f"a28-filled{path.suffix}",
+        content_disposition_type="attachment" if download else "inline",
+    )
+
+
+class TelemetryEvent(BaseModel):
+    """UI event from the frontend. Names are namespaced and metadata values
+    are scalar-only so nothing free-form (or PII-shaped) can be relayed."""
+
+    name: str = Field(min_length=4, max_length=64, pattern=r"^ui\.[a-z0-9_.]+$")
+    session_id: str | None = Field(None, max_length=64)
+    metadata: dict[str, TelemetryValue] = Field(default_factory=dict)
+
+
+@app.post("/api/telemetry")
+async def telemetry(event: TelemetryEvent) -> ApiResponse:
+    """Relay a frontend event into the trace timeline (no-op when disabled)."""
+    trimmed = {
+        key[:40]: (value[:200] if isinstance(value, str) else value)
+        for key, value in list(event.metadata.items())[:20]
+    }
+    recorded = record_frontend_event(event.name, event.session_id, trimmed)
+    return ApiResponse(success=True, data={"recorded": recorded})
