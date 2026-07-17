@@ -1,19 +1,15 @@
-# YUNAKI — AI Document Autofill
-## Product Engineer (AI) Take-Home Assignment
+# Yunaki — Agentic OS for Law Firms
 
-**Candidate:** Yugandhar Gopu (Yunaki founder)  
-**Date:** July 2026  
-**Status:** Submitted. Next round: July 9, 12–2 PM PT with Shuo (shuo@tryyunaki.ai)
+Deterministic, guardrailed AI for the parts of legal work that can't tolerate hallucination: form extraction, form population, and eligibility screening. This repo is the working build of the first product surface.
 
 ---
 
 ## 1. What This Repo Is
 
-A take-home assignment for Yunaki's Product Engineer - AI role. The product: upload passport + G-28 → AI vision extraction → editable review table → Playwright populates a live form.
+Upload passport + G-28 → AI vision extraction → editable review table → Playwright populates the target form. A second agentic module, the O-1A/EB-1A eligibility screener, runs a citation-audited assessment with a human-in-the-loop checkpoint.
 
-- **Live demo:** https://mendrika-alma.github.io/form-submission/
+- **Live demo:** https://mendrika-yunaki.github.io/form-submission/
 - **GitHub:** https://github.com/Yugandhar-G/yunaki
-- **Loom walkthrough:** https://www.loom.com/share/c0ee282272054c71b558a4eabc8467c6
 - **Validation:** 580/580 fields, 20/20 docs, 3-run eval (98.4%→99.8%→100%)
 
 ---
@@ -40,7 +36,7 @@ A take-home assignment for Yunaki's Product Engineer - AI role. The product: upl
 
 ---
 
-## 3. Key Technical Decisions (Defend These in Interview)
+## 3. Key Technical Decisions
 
 1. **Gemini over GPT-4o/Claude:** Deterministic JSON at temperature 0, Pydantic-enforced schema. Lower cost per extraction at scale.
 2. **Temperature 0 + Pydantic:** Forms are deterministic. Hallucination = wrong data on legal form = denial. Zero tolerance.
@@ -126,13 +122,13 @@ Scored: Form Volume + Error Severity + Determinism + Competition (inverted) + Yu
 - Memory layer compounds across all verticals
 - Decision point Month 12: raise $2-5M if disability + immigration traction
 
-**Long-term thesis:** "Your claims, your rules, your memory."
+**Long-term thesis:** "Your claims, your rules, your memory." Every guardrail in this repo — normalization at extraction time, allow-listed selectors, post-fill diff verification, citation-audited screener output — is the same deterministic-core-plus-LLM-edges pattern applied to a different form. That pattern is the product; individual verticals are instantiations of it.
 
 ---
 
 ## 6. Scraping Methodology & Data Sources
 
-All data verified by live Scrape on July 2-3, 2026 using Scrapling v0.4.9.
+All data verified by live scrape on July 2-3, 2026 using Scrapling v0.4.9.
 
 | Source | Method | Key Data |
 |---|---|---|
@@ -152,48 +148,20 @@ All data verified by live Scrape on July 2-3, 2026 using Scrapling v0.4.9.
 
 ---
 
-## 7. Interview Status
-
-- **Company:** Yunaki (https://tryyunaki.ai)
-- **Role:** Product Engineer - AI
-- **Contact:** Shuo (shuo@tryyunaki.ai)
-- **Next round:** July 9, 12-2 PM PT
-- **Format:** TBD — ask Shuo if whiteboard or live coding
-- **What to prep:**
-  - Defend every technical decision in the take-home
-  - System design: generalize from 2 forms to 200 forms
-  - Product thinking: who is the user, how do you price, what's the roadmap
-  - Market context: I-864 RFE rates, competitor gaps, TAM
-
----
-
-## 8. Yunaki Context (Why Yunaki Exists)
-
-**Thesis:** "Your code, your model, your memory."
-
-**V1 proved:** LLM-rewritten skills degrade (-4.2pp). Pure LLM evolution destroys quality.
-
-**V2 architecture:** SKILL.md (human-written, never edited) + memory facts (markdown, per-project, per-skill, provenance-tagged) + 3 hooks (invocation, failure, merge). Evolution = context accumulation, not rewriting. 8 modules, 151 tests, stdlib-only, no LLM in evolution loop.
-
-**Why this matters for Yunaki:** The same thesis — deterministic guardrails + memory hooks — applies to legal forms. Yunaki's architecture is the product engine. Yunaki-doc-autofill is one instantiation. The platform is the vision.
-
----
-
-## 9. Critical Files in This Repo
+## 7. Critical Files in This Repo
 
 | File | Purpose |
 |---|---|
-| `docs/agent-usage-log.md` | GRADED: every subagent prompt + correction appended |
-| `docs/writeup.md` | ~1-page writeup per brief §6 |
+| `docs/agent-usage-log.md` | Every subagent prompt + correction, appended chronologically |
+| `docs/writeup.md` | Engineering writeup |
 | `docs/ARCHITECTURE.md` | System architecture |
 | `docs/tech-research.md` | VLM + Playwright research |
 | `docs/field-map.md` | USCIS form field selectors |
 | `docs/immigration-ai-market-research.md` | Full immigration market deep-dive |
 | `docs/all-legal-verticals-market-research.md` | 15-vertical cross-analysis |
-| `docs/shuo-reply-draft.txt` | Reply draft for scheduling |
 | `backend/` | FastAPI backend with extraction, population, schemas |
 | `frontend/` | Next.js upload UI + review table |
 
 ---
 
-*Last updated: July 6, 2026*
+*Last updated: July 17, 2026*
