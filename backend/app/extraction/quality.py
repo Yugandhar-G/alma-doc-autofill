@@ -10,7 +10,7 @@ from PIL import Image
 
 from app.config import Settings, get_settings
 
-logger = logging.getLogger("alma.extraction.quality")
+logger = logging.getLogger("yunaki.extraction.quality")
 
 
 def variance_of_laplacian(gray: np.ndarray) -> float:

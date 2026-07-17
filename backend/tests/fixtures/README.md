@@ -2,7 +2,7 @@
 
 Drop these files here to enable the golden extraction tests:
 
-- `Example_G-28.pdf` — the example G-28 from the assignment (alma-public-assets S3)
+- `Example_G-28.pdf` — the example G-28 from the assignment (yunaki-public-assets S3)
 - `passport_sample.jpg` (or `.png` / `.pdf`) — any specimen passport image
 
 `tests/test_extraction_golden.py` skips cleanly when these are absent.

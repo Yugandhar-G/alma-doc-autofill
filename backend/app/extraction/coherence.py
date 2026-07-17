@@ -8,7 +8,7 @@ from rapidfuzz import fuzz
 
 from app.schemas import FieldWarning, G28Data, PassportData
 
-logger = logging.getLogger("alma.extraction.coherence")
+logger = logging.getLogger("yunaki.extraction.coherence")
 
 # Domain constant: token_sort_ratio below this (0-100) flags a probable
 # person mismatch. 85 tolerates diacritics/ordering noise but catches

@@ -1,4 +1,4 @@
-# Coding-Agent Usage — alma-doc-autofill
+# Coding-Agent Usage — yunaki-doc-autofill
 
 *How I directed the agent that built this. Raw evidence (verbatim prompts, corrections, timestamps): [agent-usage-log.md](agent-usage-log.md).*
 
@@ -24,6 +24,6 @@ The golden test was written before the extraction engine and encodes the traps a
 
 ## Review
 
-Nothing was accepted on an agent's word: I reran every agent's test suite myself, read the load-bearing files line-by-line, and re-verified its claims against sources (the fax value against the PDF, model ids against Google's docs). Safety is structural, not behavioral: the fill routine iterates an allow-list that simply doesn't contain submit/sign/Part 4–5 selectors, a test asserts no `.click()` exists in population code, and grep confirms signature ids appear nowhere in the fill path. Keys live in `.env` (never committed; uploads and fixtures are gitignored from commit one), and logs reference documents by content hash only — the review agent caught the two places extracted values could have leaked into logs, and both are fixed and tested. The observability layer went through the same governance as every architectural change: the agent had to present options with trade-offs (including the PII caveat on Langfuse's default prompt capture) and get a user ruling before adding the dependency — and the PII rule extends structurally into traces, which carry hashes, timings, and field statistics, never extracted values.
+Nothing was accepted on an agent's word: I reran every agent's test suite myself, read the load-bearing files line-by-line, and re-verified its claims against sources (the fax value against the PDF, model ids against Google's docs). Safety is structural, not behavioral: the fill routine iterates an allow-list that simply doesn't contain submit/sign/Part 4–5 selectors, a test asserts no `.click()` exists in population code, and grep confirms signature ids appear nowhere in the fill path. Keys live in `.env` (never committed; uploads and fixtures are gitignored from commit one), and logs reference documents by content hash only — the review agent caught the two places extracted values could have leaked into logs, and both are fixed and tested.
 
 **Path to production.** This miniaturizes what I'd build at scale: golden-set evals gating every model/prompt change in CI, multi-signal confidence (deterministic MRZ checksums + dual-model challenge — not logprobs, which measurably fail for extraction confidence) routing documents between auto-accept and field-flagged human review, and the review queue's corrections feeding the eval set. Since attorneys must review filings anyway, the metric worth optimizing is review-seconds per document, not straight-through automation.

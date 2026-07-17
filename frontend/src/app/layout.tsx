@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Alma · Document Autofill",
+  title: "Yunaki · Document Autofill",
   description:
     "Upload a passport and G-28, review the extracted data, and populate the form automatically. Runs locally, never submits or signs.",
 };

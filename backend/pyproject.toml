@@ -1,5 +1,5 @@
 [project]
-name = "alma-doc-autofill-backend"
+name = "yunaki-backend"
 version = "0.1.0"
 description = "Passport + G-28 extraction and form population backend"
 requires-python = ">=3.11"
@@ -17,6 +17,9 @@ dependencies = [
     "supabase>=2.6",
     "rapidfuzz>=3.9",
     "langfuse>=4.0",
+    "langgraph>=0.4",
+    "langgraph-checkpoint-sqlite>=2.0",
+    "httpx>=0.27",
 ]
 
 [project.optional-dependencies]

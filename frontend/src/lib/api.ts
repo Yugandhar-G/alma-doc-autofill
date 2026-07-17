@@ -18,7 +18,7 @@ import type {
 
 export class ApiError extends Error {}
 
-async function parseEnvelope<T>(res: Response): Promise<T> {
+export async function parseEnvelope<T>(res: Response): Promise<T> {
   let body: ApiResponse<T>;
   try {
     body = (await res.json()) as ApiResponse<T>;
@@ -33,7 +33,7 @@ async function parseEnvelope<T>(res: Response): Promise<T> {
   return body.data;
 }
 
-async function request(path: string, init: RequestInit): Promise<Response> {
+export async function request(path: string, init: RequestInit): Promise<Response> {
   // The session id groups this tab's requests into one observability session.
   const headers = {
     ...(init.headers as Record<string, string> | undefined),

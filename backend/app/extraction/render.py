@@ -13,7 +13,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 
 from app.config import Settings, get_settings
 
-logger = logging.getLogger("alma.extraction.render")
+logger = logging.getLogger("yunaki.extraction.render")
 
 SniffedFormat = Literal["pdf", "png", "jpeg"]
 

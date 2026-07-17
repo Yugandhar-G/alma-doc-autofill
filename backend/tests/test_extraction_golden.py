@@ -1,7 +1,7 @@
 """Golden extraction tests against real fixtures and the live Gemini API.
 
 Results are cached in tests/.extraction_cache/ keyed by (file hash, model,
-prompt hash) so reruns are free; set ALMA_REFRESH_EXTRACTION_CACHE=1 to force
+prompt hash) so reruns are free; set YUNAKI_REFRESH_EXTRACTION_CACHE=1 to force
 a fresh API call. When GEMINI_API_KEY is unavailable and no cache exists,
 tests SKIP (never fail).
 """
@@ -22,7 +22,7 @@ CACHE_DIR = Path(__file__).parent / ".extraction_cache"
 G28_FIXTURE = FIXTURES_DIR / "Example_G-28.pdf"
 _PASSPORT_PATTERNS = ("passport_sample.jpg", "passport_sample.jpeg",
                       "passport_sample.png", "passport_sample.pdf")
-_REFRESH_ENV = "ALMA_REFRESH_EXTRACTION_CACHE"
+_REFRESH_ENV = "YUNAKI_REFRESH_EXTRACTION_CACHE"
 
 
 def _cache_path(file_bytes: bytes, doc_type: DocType) -> Path:

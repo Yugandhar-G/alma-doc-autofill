@@ -10,17 +10,16 @@ from functools import lru_cache
 from typing import Any, Literal
 
 from google import genai
-from google.genai import types as genai_types
-from pydantic import BaseModel, ValidationError, create_model
+from pydantic import BaseModel, create_model
 
 from app.config import Settings, get_settings
 from app.extraction import prompts, render
-from app.observability import llm_generation, record_usage
 from app.extraction.quality import assert_page_quality
 from app.extraction.validators import validate_g28, validate_passport
+from app.llm import call_gemini, safe_error_summary
 from app.schemas import DocType, ExtractionEnvelope, FieldWarning, G28Data, PassportData
 
-logger = logging.getLogger("alma.extraction.engine")
+logger = logging.getLogger("yunaki.extraction.engine")
 
 _DATA_MODEL: dict[DocType, type[BaseModel]] = {"passport": PassportData, "g28": G28Data}
 
@@ -45,17 +44,9 @@ def _all_fields_null(value: Any) -> bool:
     return value is None
 
 
-def _safe_error_summary(exc: Exception) -> str:
-    """PII-safe diagnostics: field paths and error types only — never input
-    values. str(ValidationError) embeds input_value=<raw model output>, which
-    would leak extracted PII into logs and API error responses."""
-    if isinstance(exc, ValidationError):
-        parts = [
-            f"{'.'.join(str(loc) for loc in error['loc']) or '<root>'}:{error['type']}"
-            for error in exc.errors(include_input=False, include_url=False)
-        ]
-        return "; ".join(parts) or exc.title
-    return type(exc).__name__
+# Lifted to app/llm.py (shared with the screener plane); kept under the old
+# names so existing call sites and tests keep working.
+_safe_error_summary = safe_error_summary
 
 
 async def _call_gemini(
@@ -67,56 +58,16 @@ async def _call_gemini(
     settings: Settings,
     source_hash: str,
 ) -> BaseModel:
-    """One structured extraction call with retry on unparseable output.
-
-    All pages of the document go in a single request so the model sees the
-    whole form at once.
-    """
-    parts = [
-        genai_types.Part.from_bytes(data=page, mime_type="image/png") for page in png_pages
-    ]
-    config = genai_types.GenerateContentConfig(
-        temperature=settings.extraction_temperature,
-        response_mime_type="application/json",
-        response_schema=wrapper,
-    )
-    attempts = settings.extraction_max_retries + 1
-    for attempt in range(1, attempts + 1):
-        # Trace carries hash/pages/tokens only — never page images or output values.
-        with llm_generation(
-            "gemini.extract",
-            model=model,
-            metadata={
-                "source_hash": source_hash,
-                "pages": len(png_pages),
-                "attempt": attempt,
-                "temperature": settings.extraction_temperature,
-            },
-        ) as generation:
-            response = await client.aio.models.generate_content(
-                model=model, contents=[prompt, *parts], config=config
-            )
-            record_usage(generation, getattr(response, "usage_metadata", None))
-        parsed = response.parsed
-        if isinstance(parsed, wrapper):
-            return parsed
-        try:
-            return wrapper.model_validate_json(response.text or "")
-        except (ValidationError, ValueError) as exc:
-            # PII rule: never log or raise str(exc) — ValidationError text
-            # embeds input_value fragments of the model's raw output.
-            issues = (
-                [(e["loc"], e["type"]) for e in exc.errors(include_input=False)][:5]
-                if isinstance(exc, ValidationError)
-                else type(exc).__name__
-            )
-            logger.warning(
-                "unparseable model output source_hash=%s model=%s attempt=%d/%d issues=%s",
-                source_hash, model, attempt, attempts, issues,
-            )
-    raise RuntimeError(
-        f"Gemini model {model!r} returned output that failed schema validation "
-        f"{attempts} time(s) for document {source_hash}. See server logs."
+    """One structured extraction call — delegates to the shared app.llm helper."""
+    return await call_gemini(
+        client,
+        model,
+        prompt,
+        wrapper,
+        settings,
+        png_pages=png_pages,
+        source_ref=source_hash,
+        trace_name="gemini.extract",
     )
 
 

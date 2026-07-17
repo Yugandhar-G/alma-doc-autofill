@@ -54,3 +54,51 @@ See `docs/field-map.md`. Highlights: duplicate `passport-given-names` id on two 
 ## Production path (short form)
 
 Three-plane evolution: governed ZDR/VPC extraction endpoint + deterministic MRZ/checksum validators; multi-signal confidence routing documents to auto-accept / field-flag review / full review (review seconds per document is the KPI — attorneys review anyway); population stays deterministic with AI selector-healing only as drift fallback. Golden-set evals gate every model/prompt/schema change in CI. Full analysis: `docs/tech-research.md`.
+
+## Screener plane (O-1A / EB-1A eligibility, added 2026-07-15)
+
+Agentic decision support built on the same thesis: a **deterministic LangGraph
+skeleton whose nodes make schema-bound Gemini calls** — the LLM reasons inside
+nodes, code owns the path, the human owns the evidence.
+
+```
+POST intake ─┐        (REST, pre-graph: guardrails + evidence extraction,
+POST documents ┘        verbatim key-fact excerpts, per-slot error isolation)
+
+START → compile_matrix          claims → criteria mapping, pre-audited sources
+      → review_gate             interrupt(): HUMAN edits/confirms the matrix
+      → [verify_profile?]       pure route: flag ∧ key ∧ claims>0
+      │    TOOL-LOOP AGENT: model picks searches/fetches; code owns the
+      │    allow-listed tools (search_web grounding, fetch_page SSRF-guarded),
+      │    the call budget, the only-fetch-searched-URLs rule, and the
+      │    transcript audit (evidence URLs must have actually been seen;
+      │    absence of evidence = unverified, never contradicted)
+      → plan_assessments ─ Send fan-out ─ assess_one × ≤10 criteria (parallel;
+      │    contradicted claims cannot support met/likely)
+      → merits_gate → [final_merits?]   pure route: EB1A ∧ ≥3 met/likely (Kazarian step 2)
+      → verdict (per visa; model narrates, CODE counts criteria + arithmetic caps)
+      → profile_summary         strengths / eligibility drivers / bounce-back risks
+      → assemble_report         deterministic citation audit + constant disclaimer
+      → END
+```
+
+- **Anti-fabrication contract**: every claim cites an intake `answer_id`, a doc
+  hash + verbatim excerpt (substring-audited against the extraction), or a
+  grounded URL. Invalid refs stripped; uncited positive verdicts downgraded to
+  not_met + warning. Eval harness treats any overclaim as a hard failure
+  (`validation/run_screener_validation.py`, 8 personas incl. a fabrication-bait
+  empty record).
+- **HITL**: `review_gate` is a real LangGraph interrupt spanning HTTP requests;
+  checkpoints in SQLite (`uploads/screener/checkpoints.db`) so review survives
+  reloads. Edited matrices re-validate through the same schema + source audit.
+- **Live agent feed**: run/review are SSE streams with two event families —
+  lifecycle (`node_finished`, `awaiting_review`, `done`) and genuine activity
+  (`evidence_scan` = actual excerpts being read, `model_thinking` = Gemini
+  thought summaries streamed token-by-token, `finding`, `web_lookup`). Nothing
+  templated. Session-owner stream only; Langfuse traces stay masked.
+- **USCIS knowledge as data**: `screener/criteria.py` — 10 CriterionSpecs with
+  8 CFR refs, adjudicator-accepted evidence, and RFE trigger patterns; prompts
+  interpolate from the registry, so the legal framing has one reviewable home.
+- **Registry**: O-1A = 8 criteria (8 CFR 214.2(o)(3)(iii)(B)), EB-1A = those
+  plus exhibitions + commercial success (8 CFR 204.5(h)(3)), threshold 3 each,
+  one-time-major-award short-circuit handled in the verdict narrative.

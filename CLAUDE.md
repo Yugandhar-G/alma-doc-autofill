@@ -1,9 +1,11 @@
-# Project Rules — alma-doc-autofill
+# Project Rules — yunaki-doc-autofill
 
 Document automation take-home: upload passport + G-28 → Gemini vision extraction → editable review table → Playwright populates https://mendrika-alma.github.io/form-submission/. Runs fully local. Never submits or signs anything.
 
+Second feature: O-1A / EB-1A eligibility screener — intake + evidence docs → LangGraph agentic flow (compile evidence matrix → human review interrupt → tool-loop verification agent (web search + page fetch, budgeted, SSRF-guarded, transcript-audited) → parallel per-criterion assessment → verdict → profile summary) → citation-audited report. Decision support only; the constant attorney-review disclaimer is never model-generated.
+
 ## Governance
-- Any architectural change (LLM vendor, storage, deployment, framework, new dependency category) → ask the user first. Locked decisions: Gemini extraction, Supabase storage with local-disk fallback, local-only deploy (Vercel later), Next.js frontend, FastAPI backend.
+- Any architectural change (LLM vendor, storage, deployment, framework, new dependency category) → ask the user first. Locked decisions: Gemini extraction, Supabase storage with local-disk fallback, local-only deploy (Vercel later), Next.js frontend, FastAPI backend, LangGraph for screener orchestration (approved 2026-07-15; nodes call Gemini via app/llm.py directly — no langchain-* integration packages).
 - Every subagent prompt and every correction of agent output gets appended to `docs/agent-usage-log.md` immediately — this log is a graded deliverable.
 
 ## Extraction contract (non-negotiable)
@@ -26,15 +28,26 @@ Document automation take-home: upload passport + G-28 → Gemini vision extracti
 - Populate is reachable only via the review table; edited values re-validate through the same schemas.
 - No PII in logs (reference docs by content hash). `uploads/` and `backend/tests/fixtures/` are gitignored. Secrets via `.env` only.
 
+## Screener contract (mirrors the extraction contract)
+- Every claim/verdict better than not_met must cite a source (intake answer_id, doc hash + VERBATIM excerpt, or grounded URL). `screener/citations.py` audits deterministically: invalid refs stripped, uncited positive verdicts downgraded to not_met + warning. An overclaim is the worst defect class (the screener's "fabricated").
+- Graph skeleton is deterministic — fixed edges, routing by pure functions only (enrichment flag+key+claims; EB-1A merits gate ≥3 met/likely). LLM never picks the path.
+- Human review is a real `interrupt()` at review_gate; edits re-validate through the same schema and same source audit. Checkpoints in SQLite (`uploads/screener/checkpoints.db`) so HITL survives reloads.
+- Web content is untrusted data: length-capped, delimiter-wrapped; the verification agent may only fetch URLs surfaced by its own searches (never URLs found inside page content), every hop re-passes the SSRF guard, and its evidence URLs are transcript-audited — a URL the agent never saw is stripped, and verified/contradicted statuses without surviving evidence downgrade to unverified. Absence of evidence is "unverified", never "contradicted". Verification never feeds compile_matrix.
+- Two PII channels: the session-owner SSE stream may carry their own excerpts/model thinking (that's the product, FR: genuine activity feed); Langfuse traces and logs stay masked (hashes, criterion ids, counts only). Never send the same event object to both.
+
 ## Layout
 - `backend/app/schemas/` — Pydantic contracts (source of truth; TS types mirror them)
+- `backend/app/llm.py` — shared Gemini structured-call helper (retry/validation/tracing) + streaming variant with thought summaries
 - `backend/app/extraction/` — Gemini client, PDF/image ingestion, prompts
 - `backend/app/population/` — Playwright fill, field map, verification
+- `backend/app/screener/` — criteria registry (USCIS knowledge as data), LangGraph graph + nodes, citation audit, evidence extraction, grounded web tool, APIRouter
 - `backend/app/storage/` — Supabase + local fallback behind 3-method interface
-- `frontend/` — Next.js App Router upload UI + review table
+- `backend/validation/` — extraction personas + screener personas and eval runners
+- `frontend/` — Next.js App Router upload UI + review table + `/screener` wizard
 - `docs/` — architecture, tech research, field map, agent usage log
 
 ## Commands
 - `make dev` — backend :8000 + frontend :3000
-- `cd backend && pytest` — golden test skips (not fails) when fixtures absent
+- `cd backend && pytest` — golden tests skip (not fail) when fixtures/key absent
 - Population tests run against `backend/tests/data/form_snapshot.html` offline; live-URL runs are explicit
+- `cd backend && python -m validation.run_screener_validation` — live screener eval (8 personas, enrichment off, exit 1 on any overclaim) → docs/screener-validation-report.md

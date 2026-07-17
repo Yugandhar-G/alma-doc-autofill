@@ -14,7 +14,7 @@ from app.config import Settings
 from app.schemas import ExtractionEnvelope
 from app.storage.base import DocumentStore, ExtractionKind
 
-logger = logging.getLogger("alma.storage.local")
+logger = logging.getLogger("yunaki.storage.local")
 
 _DOC_ID_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 

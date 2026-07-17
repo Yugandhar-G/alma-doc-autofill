@@ -1,4 +1,4 @@
--- One-time Supabase setup for alma-doc-autofill.
+-- One-time Supabase setup for yunaki-doc-autofill.
 -- Run in the Supabase SQL editor (or via supabase db push) before setting
 -- SUPABASE_URL / SUPABASE_SERVICE_KEY in backend/.env.
 

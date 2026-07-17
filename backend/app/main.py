@@ -25,6 +25,7 @@ from app.observability import (
 )
 from app.population import populate_form
 from app.population.artifact import stored_artifact_path
+from app.screener.api import router as screener_router
 from app.schemas import (
     ApiResponse,
     DocType,
@@ -35,7 +36,7 @@ from app.schemas import (
 )
 from app.storage.base import get_store
 
-logger = logging.getLogger("alma")
+logger = logging.getLogger("yunaki")
 settings = get_settings()
 
 @asynccontextmanager
@@ -44,7 +45,8 @@ async def _lifespan(_: FastAPI):
     observability_flush()  # drain the trace export queue on shutdown
 
 
-app = FastAPI(title="alma-doc-autofill", lifespan=_lifespan)
+app = FastAPI(title="yunaki-doc-autofill", lifespan=_lifespan)
+app.include_router(screener_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_origin],

@@ -1,4 +1,4 @@
-# Frontend — Alma G-28 Document Autofill
+# Frontend — Yunaki G-28 Document Autofill
 
 Next.js (App Router, TypeScript, Tailwind v4) UI for the document-automation pipeline. This is the human-in-the-loop gate: upload passport + G-28, review and edit every extracted field, then trigger population and inspect the verification report.
 

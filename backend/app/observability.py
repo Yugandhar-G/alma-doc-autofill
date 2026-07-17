@@ -20,7 +20,7 @@ from typing import Any, Iterator
 from app.config import get_settings
 from app.schemas import ExtractionEnvelope, PopulationReport
 
-logger = logging.getLogger("alma.observability")
+logger = logging.getLogger("yunaki.observability")
 
 # Metadata values the telemetry endpoint accepts from the frontend.
 TelemetryValue = str | int | float | bool | None
@@ -37,7 +37,7 @@ def get_langfuse():
         # service name up from the environment at TracerProvider creation,
         # so it must be in place before the client is constructed (else
         # traces report service.name="unknown_service").
-        os.environ.setdefault("OTEL_SERVICE_NAME", "alma-doc-autofill")
+        os.environ.setdefault("OTEL_SERVICE_NAME", "yunaki-doc-autofill")
         from langfuse import Langfuse
 
         client = Langfuse(

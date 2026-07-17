@@ -7,7 +7,7 @@
  */
 import { API_BASE } from "./config";
 
-const SESSION_KEY = "alma-session-id";
+const SESSION_KEY = "yunaki-session-id";
 
 export function getSessionId(): string {
   if (typeof window === "undefined") return "server";

@@ -18,7 +18,7 @@ from app.config import Settings
 from app.schemas import ExtractionEnvelope
 from app.storage.base import DocumentStore
 
-logger = logging.getLogger("alma.storage.supabase")
+logger = logging.getLogger("yunaki.storage.supabase")
 
 _EXTRACTIONS_TABLE = "extractions"
 

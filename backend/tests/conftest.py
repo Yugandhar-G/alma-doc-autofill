@@ -39,7 +39,7 @@ PDF_PAGE_WIDTH_PT = 612  # US letter
 PDF_PAGE_HEIGHT_PT = 792
 
 
-def make_pdf_bytes(pages: int, text: str = "alma test page") -> bytes:
+def make_pdf_bytes(pages: int, text: str = "yunaki test page") -> bytes:
     doc = fitz.open()
     for index in range(pages):
         page = doc.new_page(width=PDF_PAGE_WIDTH_PT, height=PDF_PAGE_HEIGHT_PT)

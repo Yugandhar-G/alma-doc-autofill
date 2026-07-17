@@ -45,6 +45,13 @@ class Settings(BaseSettings):
     # Frontend origin for CORS
     frontend_origin: str = "http://localhost:3000"
 
+    # Screener (O-1A / EB-1A eligibility decision support)
+    screener_checkpoint_path: str = "uploads/screener/checkpoints.db"
+    screener_max_evidence_docs: int = 8
+    screener_web_enrichment: bool = True   # gates the verification agent; AND gemini key present
+    screener_agent_max_tool_calls: int = 10  # search_web + fetch_page budget per run
+    screener_intake_max_chars: int = 2000  # per free-text answer (schema-enforced)
+
     # Observability (Langfuse) — tracing is a no-op until both keys are set.
     langfuse_public_key: str | None = None
     langfuse_secret_key: str | None = None
