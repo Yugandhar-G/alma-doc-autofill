@@ -20,7 +20,12 @@ from typing import Any, Callable
 from google.genai import types as genai_types
 
 from app.config import Settings
-from app.kernel.agent import AgentBudget, AgentTranscript, run_tool_loop
+from app.kernel.agent import (  # make_agent_model module-level: test seam
+    AgentBudget,
+    AgentTranscript,
+    make_agent_model,
+    run_tool_loop,
+)
 from app.kernel.audit.transcript import audit_evidence_urls
 from app.kernel.llm import call_gemini, make_client  # module-level: test seam
 from app.kernel.tools.fetch_page import fetch_page  # module-level: test seam
@@ -161,16 +166,16 @@ async def run_verification_agent(
     emit: Callable[[dict], None],
     live: bool = False,
 ) -> tuple[ProfileVerification, AgentTranscript]:
-    """Run the tool loop, then distill the transcript into a structured,
-    deterministically-audited ProfileVerification."""
-    client = make_client(settings)
+    """Run the deepagents tool loop, then distill the transcript into a
+    structured, deterministically-audited ProfileVerification. The loop runs
+    on the langchain Gemini model; distillation stays on the direct Gemini
+    structured path (response_schema discipline)."""
     budget = settings.screener_agent_max_tool_calls
     transcript = AgentTranscript()
     ctx = ToolContext(settings=settings, transcript=transcript, emit=emit, node=_NODE)
 
     await run_tool_loop(
-        client=client,
-        model=settings.gemini_model,
+        model=make_agent_model(settings, live=live),
         task_prompt=_task_prompt(intake, matrix, budget),
         tools=_build_registry(),
         budget=AgentBudget(max_tool_calls=budget, max_turns=_MAX_AGENT_TURNS),
@@ -178,6 +183,7 @@ async def run_verification_agent(
         live=live,
         trace_name="gemini.screener.agent",
     )
+    client = make_client(settings)
 
     # Structured distillation of the REAL transcript (no tools on this call).
     distill_prompt = (
