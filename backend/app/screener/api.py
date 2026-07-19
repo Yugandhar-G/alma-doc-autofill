@@ -12,11 +12,8 @@ The graph checkpoints to SQLite so the human-review interrupt survives
 process reloads; the in-memory _SESSIONS dict is only a pre-run buffer
 (intake + uploaded evidence before the first run).
 """
-import asyncio
-import json
 import logging
 import uuid
-from pathlib import Path
 from typing import AsyncIterator
 
 from fastapi import APIRouter, Request, UploadFile
@@ -25,7 +22,13 @@ from langgraph.types import Command
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
-from app.observability import request_trace
+from app.kernel.observability import request_trace
+from app.kernel.runtime import (
+    RunManager,
+    event_stream,
+    open_sqlite_checkpointer,
+    thread_config as _thread_config,
+)
 from app.schemas import (
     ApiResponse,
     EvidenceDocRecord,
@@ -48,8 +51,7 @@ router = APIRouter(prefix="/api/screener")
 _SESSIONS: dict[str, "SessionRecord"] = {}
 _MAX_SESSIONS = 200
 
-_GRAPH = None
-_GRAPH_LOCK = asyncio.Lock()
+_RUNS = RunManager()
 
 
 class SessionRecord(BaseModel):
@@ -70,31 +72,17 @@ class ReviewRequest(BaseModel):
     matrix: EvidenceMatrix
 
 
+async def _build_screener_graph():
+    checkpointer = await open_sqlite_checkpointer(get_settings().screener_checkpoint_path)
+    graph = build_graph(checkpointer=checkpointer)
+    logger.info("screener graph ready")
+    return graph
+
+
 async def _get_graph():
-    """Compiled graph over the SQLite checkpointer, created once per process.
-    The connection lives for the process lifetime (local-first app; the OS
-    reclaims it on exit)."""
-    global _GRAPH
-    if _GRAPH is None:
-        async with _GRAPH_LOCK:
-            if _GRAPH is None:
-                import aiosqlite
-                from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-
-                path = Path(get_settings().screener_checkpoint_path)
-                path.parent.mkdir(parents=True, exist_ok=True)
-                conn = await aiosqlite.connect(str(path))
-                _GRAPH = build_graph(checkpointer=AsyncSqliteSaver(conn))
-                logger.info("screener graph ready checkpoint=%s", path)
-    return _GRAPH
-
-
-def _thread_config(session_id: str) -> dict:
-    return {"configurable": {"thread_id": session_id}}
-
-
-def _sse(payload: dict) -> str:
-    return f"data: {json.dumps(payload)}\n\n"
+    """Compiled graph over the SQLite checkpointer, created once per process
+    via the kernel RunManager (the Phase-1 replacement for the _GRAPH global)."""
+    return await _RUNS.get_or_build("screener", _build_screener_graph)
 
 
 def _json_error(message: str) -> ApiResponse:
@@ -225,40 +213,17 @@ async def upload_documents(
         return ApiResponse(success=True, data=data)
 
 
-async def _event_stream(graph, config: dict, input_obj) -> AsyncIterator[str]:
-    """Graph execution → SSE. Lifecycle events from `updates` mode, the
-    genuine activity feed from `custom` mode. PII goes only to this stream
-    (the session owner's own data); traces stay masked."""
-    yield _sse({"event": "run_started"})
-    try:
-        async for mode, payload in graph.astream(
-            input_obj, config=config, stream_mode=["updates", "custom"]
-        ):
-            if mode == "custom":
-                yield _sse({"event": "activity", **payload})
-                continue
-            for node, delta in payload.items():
-                if node == "__interrupt__":
-                    interrupt_value = delta[0].value if delta else {}
-                    yield _sse(
-                        {
-                            "event": "awaiting_review",
-                            "matrix": interrupt_value.get("matrix"),
-                        }
-                    )
-                else:
-                    yield _sse({"event": "node_finished", "node": node})
-        snapshot = await graph.aget_state(config)
-        report = (snapshot.values or {}).get("report")
-        if report is not None:
-            if not isinstance(report, ScreenerReport):
-                report = ScreenerReport.model_validate(report)
-            yield _sse({"event": "done", "report": report.model_dump()})
-    except Exception:
-        logger.exception("screener stream failed")
-        yield _sse(
-            {"event": "error", "message": "Screener run failed. Check server logs."}
-        )
+def _event_stream(graph, config: dict, input_obj) -> AsyncIterator[str]:
+    """Graph execution → SSE via the kernel runner. PII goes only to this
+    stream (the session owner's own data); traces stay masked."""
+    return event_stream(
+        graph,
+        config,
+        input_obj,
+        result_key="report",
+        result_model=ScreenerReport,
+        error_message="Screener run failed. Check server logs.",
+    )
 
 
 @router.post("/session/{session_id}/run")
@@ -271,9 +236,15 @@ async def run(session_id: str, request: Request):
     if record.intake is None:
         return _json_error("Submit the intake questionnaire first.")
     graph = await _get_graph()
+    settings = get_settings()
     state = ScreenerState(
         session_id=session_id,
         live_feed=True,  # SSE run: enables the thought-summary streaming path
+        # Snapshot: routing is pure over state; settings are read exactly once,
+        # here, at run start.
+        web_enrichment_enabled=bool(
+            settings.screener_web_enrichment and settings.gemini_api_key
+        ),
         visa_targets=record.visa_targets,
         intake=record.intake,
         evidence_docs=record.evidence_docs,

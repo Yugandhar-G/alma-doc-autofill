@@ -14,8 +14,8 @@ but which retains zero valid citations is downgraded to not_met with a
 warning — the screener version of "a null is correct; a plausible guess is a
 defect". Models are never mutated (model_copy only).
 """
-import re
-
+from app.kernel.audit.refs import audit_refs as _kernel_audit_refs
+from app.kernel.audit.refs import normalize as _normalize
 from app.schemas import (
     CriterionAssessment,
     EvidenceDocRecord,
@@ -24,12 +24,6 @@ from app.schemas import (
     SourceRef,
 )
 from app.screener.intake import is_valid_answer_ref
-
-_WS = re.compile(r"\s+")
-
-
-def _normalize(text: str) -> str:
-    return _WS.sub(" ", text).strip().lower()
 
 
 def _doc_corpus(docs: list[EvidenceDocRecord]) -> dict[str, str]:
@@ -65,12 +59,11 @@ def audit_refs(
     corpus: dict[str, str],
     grounded_urls: frozenset[str],
 ) -> tuple[list[SourceRef], int]:
-    """(surviving refs, number stripped)."""
-    kept = [
-        ref for ref in refs
-        if _ref_is_valid(ref, valid_answer_ids, corpus, grounded_urls)
-    ]
-    return kept, len(refs) - len(kept)
+    """(surviving refs, number stripped). Mechanics live in kernel.audit;
+    this module owns only the validity policy (_ref_is_valid)."""
+    return _kernel_audit_refs(
+        refs, lambda ref: _ref_is_valid(ref, valid_answer_ids, corpus, grounded_urls)
+    )
 
 
 def audit_assessment(

@@ -8,11 +8,10 @@ separately by PII-safe summarizers and never carry this content.
 import logging
 from typing import Any
 
-from google import genai
 from pydantic import BaseModel
 
 from app.config import Settings
-from app.llm import call_gemini, call_gemini_stream
+from app.kernel.llm import call_gemini, call_gemini_stream, make_client  # noqa: F401 — make_client re-exported for compatibility
 from app.schemas import CriterionAssessment, EvidenceMatrix, ProfileVerification
 
 logger = logging.getLogger("yunaki.screener")
@@ -42,10 +41,6 @@ def emit(event: dict[str, Any]) -> None:
         logger.debug("activity emit dropped (no active stream)")
 
 
-def make_client(settings: Settings) -> genai.Client:
-    return genai.Client(api_key=settings.require_gemini_key())
-
-
 async def generate(
     settings: Settings,
     prompt: str,
@@ -62,7 +57,7 @@ async def generate(
     ladder — output contract is identical either way. `live` comes from
     state.live_feed because langgraph hands out a no-op stream writer even in
     plain ainvoke, so writer presence alone can't gate the streaming path."""
-    from app.llm import safe_error_summary
+    from app.kernel.llm import safe_error_summary
 
     client = make_client(settings)
     if live and _stream_writer() is not None:

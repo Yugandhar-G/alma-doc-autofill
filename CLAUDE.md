@@ -5,7 +5,8 @@ Document automation take-home: upload passport + G-28 → Gemini vision extracti
 Second feature: O-1A / EB-1A eligibility screener — intake + evidence docs → LangGraph agentic flow (compile evidence matrix → human review interrupt → tool-loop verification agent (web search + page fetch, budgeted, SSRF-guarded, transcript-audited) → parallel per-criterion assessment → verdict → profile summary) → citation-audited report. Decision support only; the constant attorney-review disclaimer is never model-generated.
 
 ## Governance
-- Any architectural change (LLM vendor, storage, deployment, framework, new dependency category) → ask the user first. Locked decisions: Gemini extraction, Supabase storage with local-disk fallback, local-only deploy (Vercel later), Next.js frontend, FastAPI backend, LangGraph for screener orchestration (approved 2026-07-15; nodes call Gemini via app/llm.py directly — no langchain-* integration packages).
+- Any architectural change (LLM vendor, storage, deployment, framework, new dependency category) → ask the user first. Locked decisions: Gemini extraction, Supabase storage with local-disk fallback, Next.js frontend, FastAPI backend, LangGraph for screener orchestration (approved 2026-07-15; nodes call Gemini via the kernel llm module directly — no langchain-* integration packages).
+- **OS v1 build (approved 2026-07-19, supersedes local-only deploy):** product ships as a native Mac + Windows desktop app — Tauri 2 shell + PyInstaller FastAPI sidecar, Claude-Desktop-style architecture (firm sign-in, Supabase as the firm-sync plane for matters/runs/interrupts/memory + Postgres checkpoints; all agent work and document processing executes locally; no-account mode is fully local). Approved new dependency categories: Tauri, aiosqlite matter store, Supabase Auth, TanStack Query + Zustand + Vitest (frontend). Kernel extraction (`backend/app/kernel/`) is the shared runtime every workflow package builds on; kernel modules must never import from screener/extraction/population planes. Plan of record: ~/.claude/plans/use-multiple-parllel-agent-streamed-shore.md.
 - Every subagent prompt and every correction of agent output gets appended to `docs/agent-usage-log.md` immediately — this log is a graded deliverable.
 
 ## Extraction contract (non-negotiable)
@@ -36,8 +37,8 @@ Second feature: O-1A / EB-1A eligibility screener — intake + evidence docs →
 - Two PII channels: the session-owner SSE stream may carry their own excerpts/model thinking (that's the product, FR: genuine activity feed); Langfuse traces and logs stay masked (hashes, criterion ids, counts only). Never send the same event object to both.
 
 ## Layout
+- `backend/app/kernel/` — shared runtime (Phase 1): llm (structured Gemini calls + client factory), observability (tracing primitives + maskers), config (Settings + SettingsBundle), tools (ToolRegistry + SSRF guards + web_search/fetch_page drivers), agent (generic bounded tool-loop + AgentTranscript), audit (ref strip + transcript-evidence machinery; policy stays per package), runtime (checkpointer factory, RunManager, SSE runner). Kernel never imports package planes. Old paths (`app/llm.py`, `app/observability.py`, `app/config.py`, screener tools) are re-export shims until Phase 2.
 - `backend/app/schemas/` — Pydantic contracts (source of truth; TS types mirror them)
-- `backend/app/llm.py` — shared Gemini structured-call helper (retry/validation/tracing) + streaming variant with thought summaries
 - `backend/app/extraction/` — Gemini client, PDF/image ingestion, prompts
 - `backend/app/population/` — Playwright fill, field map, verification
 - `backend/app/screener/` — criteria registry (USCIS knowledge as data), LangGraph graph + nodes, citation audit, evidence extraction, grounded web tool, APIRouter

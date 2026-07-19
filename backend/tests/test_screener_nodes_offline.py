@@ -45,23 +45,13 @@ def _met(criterion_id):
     )
 
 
-class _Namespace:
-    """Settings stand-in for pure routing functions."""
-
-    def __init__(self, **kw):
-        self.__dict__.update(kw)
+# Enrichment is off by construction in offline tests: ScreenerState defaults
+# web_enrichment_enabled=False, and routing is pure over state (the API layer
+# snapshots settings onto the state at run start — no fixture needed).
 
 
 @pytest.fixture
-def enrichment_off(monkeypatch):
-    monkeypatch.setattr(
-        "app.screener.graph.get_settings",
-        lambda: _Namespace(screener_web_enrichment=False, gemini_api_key=None),
-    )
-
-
-@pytest.fixture
-def fake_llm(monkeypatch, enrichment_off):
+def fake_llm(monkeypatch):
     """Patch the shared node LLM seam (common.generate). Returns the call log."""
     calls: list[str] = []
 
@@ -151,37 +141,37 @@ def test_merits_gate_ignores_weak_and_not_met():
     assert route_merits(_state(("EB1A",), weak)) == "verdict"
 
 
-def test_enrichment_route_respects_flag_key_and_matrix(monkeypatch):
-    state = _state()
-    state = state.model_copy(
-        update={
-            "matrix": EvidenceMatrix(
-                items=[
-                    {
-                        "claim": "c",
-                        "criterion_ids": ["awards"],
-                        "sources": [{"kind": "answer", "ref": "awards[0]"}],
-                    }
-                ]
-            )
-        }
+def test_enrichment_route_is_pure_over_state():
+    """Routing reads ONLY state: the snapshotted enrichment flag and the
+    presence of reviewed claims. Settings are never consulted at route time
+    (the API layer snapshots them onto the state at run start)."""
+    matrix = EvidenceMatrix(
+        items=[
+            {
+                "claim": "c",
+                "criterion_ids": ["awards"],
+                "sources": [{"kind": "answer", "ref": "awards[0]"}],
+            }
+        ]
     )
-    cases = [
-        (dict(screener_web_enrichment=True, gemini_api_key="k"), "verify_profile"),
-        (dict(screener_web_enrichment=False, gemini_api_key="k"), "plan_assessments"),
-        (dict(screener_web_enrichment=True, gemini_api_key=None), "plan_assessments"),
-    ]
-    for settings_kw, expected in cases:
-        monkeypatch.setattr(
-            "app.screener.graph.get_settings", lambda kw=settings_kw: _Namespace(**kw)
-        )
-        assert route_verification(state) == expected
-    # No reviewed claims → nothing to verify.
-    monkeypatch.setattr(
-        "app.screener.graph.get_settings",
-        lambda: _Namespace(screener_web_enrichment=True, gemini_api_key="k"),
+    with_claims = _state().model_copy(update={"matrix": matrix})
+
+    # Flag on + claims → verify; flag off → assessments regardless of claims.
+    assert (
+        route_verification(with_claims.model_copy(update={"web_enrichment_enabled": True}))
+        == "verify_profile"
     )
-    assert route_verification(_state()) == "plan_assessments"
+    assert route_verification(with_claims) == "plan_assessments"
+    # No reviewed claims → nothing to verify, even with the flag on.
+    assert (
+        route_verification(_state().model_copy(update={"web_enrichment_enabled": True}))
+        == "plan_assessments"
+    )
+    # Empty matrix → same.
+    empty = _state().model_copy(
+        update={"web_enrichment_enabled": True, "matrix": EvidenceMatrix(items=[])}
+    )
+    assert route_verification(empty) == "plan_assessments"
 
 
 # ---- full graph with fake LLM (HITL crossed with the unedited matrix) ----

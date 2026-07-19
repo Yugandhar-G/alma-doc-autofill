@@ -17,7 +17,7 @@ from app.extraction import render
 from app.extraction.quality import assert_page_quality
 from app.llm import call_gemini
 from app.schemas import EvidenceDocRecord, EvidenceKind, FieldWarning
-from app.screener.nodes.common import make_client
+from app.kernel.llm import make_client
 
 logger = logging.getLogger("yunaki.screener.evidence")
 

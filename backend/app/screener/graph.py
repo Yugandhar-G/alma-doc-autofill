@@ -13,7 +13,6 @@ final-merits gate opens). No LLM ever chooses the path.
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
-from app.config import get_settings
 from app.screener.criteria import EB1A_THRESHOLD, criteria_for, criteria_for_targets
 from app.screener.nodes import (
     assemble_report,
@@ -29,15 +28,13 @@ from app.screener.state import AssessOneInput, ScreenerState
 
 
 def route_verification(state: ScreenerState) -> str:
-    """Pure function over settings + state: the verification agent runs only
-    when enabled, a key is present, and there are reviewed claims to check."""
-    settings = get_settings()
-    if (
-        settings.screener_web_enrichment
-        and settings.gemini_api_key
-        and state.matrix is not None
-        and state.matrix.items
-    ):
+    """Pure function over STATE ONLY: the verification agent runs when the
+    run was started with enrichment enabled (web_enrichment_enabled is
+    snapshotted from settings + key presence at run start by the API layer)
+    and there are reviewed claims to check. Routing never reads live
+    settings — that is what keeps the path deterministic per run and makes
+    per-tenant configuration possible without rebuilding graphs."""
+    if state.web_enrichment_enabled and state.matrix is not None and state.matrix.items:
         return "verify_profile"
     return "plan_assessments"
 

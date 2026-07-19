@@ -26,6 +26,10 @@ class ScreenerState(BaseModel):
     # True only for API-streamed runs: gates the thought-summary streaming
     # path so harness/test invokes never pay a speculative streaming call.
     live_feed: bool = False
+    # Snapshotted from settings at run start (API layer): routing stays a pure
+    # function of state — no node or edge ever reads live settings, which is
+    # what makes per-tenant configuration possible without rebuilding graphs.
+    web_enrichment_enabled: bool = False
     visa_targets: list[VisaType] = Field(default_factory=lambda: ["O1A", "EB1A"])
     intake: IntakeAnswers | None = None
     evidence_docs: list[EvidenceDocRecord] = Field(default_factory=list)
