@@ -46,13 +46,11 @@ async def event_stream(
                 continue
             for node, delta in payload.items():
                 if node == "__interrupt__":
+                    # The interrupt payload is package-defined (screener parks
+                    # with {"matrix": ...}, autofill with envelopes); spread it
+                    # so each package's review UI gets its own shape.
                     interrupt_value = delta[0].value if delta else {}
-                    yield sse(
-                        {
-                            "event": "awaiting_review",
-                            "matrix": interrupt_value.get("matrix"),
-                        }
-                    )
+                    yield sse({"event": "awaiting_review", **(interrupt_value or {})})
                 else:
                     yield sse({"event": "node_finished", "node": node})
         snapshot = await graph.aget_state(config)

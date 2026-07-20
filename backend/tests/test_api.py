@@ -82,8 +82,12 @@ def client():
 
 
 def post_extract(client, store, extract_side_effect, files):
-    with patch.object(m, "extract_document", side_effect=extract_side_effect), patch.object(
-        m, "get_store", return_value=store
+    # The extraction seam lives in the autofill service module (shared by the
+    # legacy endpoint and the package run path) since the B1 package refactor.
+    import app.packages.autofill.service as svc
+
+    with patch.object(svc, "extract_document", side_effect=extract_side_effect), patch.object(
+        svc, "get_store", return_value=store
     ):
         return client.post("/api/extract", files=files)
 

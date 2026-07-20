@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     # Frontend origin for CORS
     frontend_origin: str = "http://localhost:3000"
 
+    # Workflow-run checkpointing (per package; one DB each until the matter
+    # store consolidates them)
+    autofill_checkpoint_path: str = "uploads/autofill/checkpoints.db"
+
     # Screener (O-1A / EB-1A eligibility decision support)
     screener_checkpoint_path: str = "uploads/screener/checkpoints.db"
     screener_max_evidence_docs: int = 8
