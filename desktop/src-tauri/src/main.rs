@@ -60,6 +60,9 @@ fn webview_origin() -> String {
 ///
 /// Process env is inherited, so GEMINI_API_KEY / SUPABASE_* set in the shell's
 /// environment reach the sidecar unchanged.
+// `app` is used only in the release branch (bundled-resource path resolution);
+// debug builds resolve from CARGO_MANIFEST_DIR, so it is unused there.
+#[cfg_attr(debug_assertions, allow(unused_variables))]
 fn resolve_sidecar(app: &tauri::App, port: u16, token: &str) -> Command {
     let origin = webview_origin();
     let port_s = port.to_string();
