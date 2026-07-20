@@ -24,7 +24,11 @@ async def review_gate(state: ScreenerState) -> dict:
     warnings: list[FieldWarning] = []
     items = []
     for item in edited.items:
-        kept, stripped = audit_refs(item.sources, valid_answers, corpus, frozenset())
+        # grounded_urls + valid_memory_ids both empty: a human edit re-validates
+        # against the same intake + doc corpus, never web/memory allow-lists.
+        kept, stripped = audit_refs(
+            item.sources, valid_answers, corpus, frozenset(), frozenset()
+        )
         if stripped:
             warnings.append(
                 FieldWarning(

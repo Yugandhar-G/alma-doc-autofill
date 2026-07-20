@@ -66,6 +66,11 @@ class AgentTranscript(BaseModel):
 
     seen_urls: list[str] = []
     fetched_urls: list[str] = []
+    # Firm-data refs a tool actually surfaced this run (memory ids, doc_ids,
+    # run_ids) — the transcript-audit ground truth for firm-data agents,
+    # exactly parallel to seen_urls for web agents. A citation to a ref not in
+    # here is one the agent never saw.
+    seen_refs: list[str] = []
     tool_calls: int = 0
     log: list[str] = []  # rendered steps for the caller's distillation call
 

@@ -57,12 +57,14 @@ async def assemble_report(state: ScreenerState) -> dict:
         answer_index(state.intake).keys() if state.intake else ()
     )
     grounded_urls = frozenset(state.grounded_urls)
+    valid_memory_ids = frozenset(state.recalled_memory_ids)
 
     audited = []
     new_warnings: list[FieldWarning] = []
     for assessment in state.assessments:
         checked, warnings = audit_assessment(
-            assessment, valid_answer_ids, state.evidence_docs, grounded_urls
+            assessment, valid_answer_ids, state.evidence_docs, grounded_urls,
+            valid_memory_ids,
         )
         audited.append(checked)
         new_warnings.extend(warnings)
@@ -70,7 +72,8 @@ async def assemble_report(state: ScreenerState) -> dict:
     merits = state.final_merits
     if merits is not None:
         merits, merit_warnings = audit_final_merits(
-            merits, valid_answer_ids, state.evidence_docs, grounded_urls
+            merits, valid_answer_ids, state.evidence_docs, grounded_urls,
+            valid_memory_ids,
         )
         new_warnings.extend(merit_warnings)
 

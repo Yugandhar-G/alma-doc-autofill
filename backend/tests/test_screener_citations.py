@@ -121,3 +121,55 @@ def test_models_are_not_mutated():
     a = _assessment(citations=[ref])
     audit_assessment(a, ANSWER_IDS, [], frozenset())
     assert a.citations == [ref]  # original untouched (immutability contract)
+
+
+# --- Memory as a citable source -------------------------------------------
+# Recall is firm-scoped upstream, so the DETERMINISTIC recalled set IS the firm
+# wall: a kind=memory ref to an id NOT in that set is the cross-firm / poisoned
+# case and must be stripped exactly like any other overclaim.
+RECALLED = frozenset({"mem-123", "mem-456"})
+
+
+def test_recalled_memory_citation_survives():
+    a = _assessment(verdict="met", citations=[SourceRef(kind="memory", ref="mem-123")])
+    audited, warnings = audit_assessment(a, ANSWER_IDS, [], frozenset(), RECALLED)
+    assert audited.verdict == "met"
+    assert [c.ref for c in audited.citations] == ["mem-123"]
+    assert warnings == []
+
+
+def test_memory_citation_outside_recalled_set_is_stripped_and_downgraded():
+    """The cross-firm case: an id the model was never shown this run."""
+    a = _assessment(verdict="likely", citations=[SourceRef(kind="memory", ref="mem-999")])
+    audited, warnings = audit_assessment(a, ANSWER_IDS, [], frozenset(), RECALLED)
+    assert audited.citations == []
+    assert audited.verdict == "not_met"
+    fields = [w.field for w in warnings]
+    assert "assessments.awards.citations" in fields
+    assert "assessments.awards.verdict" in fields
+
+
+def test_memory_citation_defaults_closed_when_no_recall_passed():
+    """No recalled set threaded (default frozenset()) → no memory ref survives."""
+    a = _assessment(verdict="likely", citations=[SourceRef(kind="memory", ref="mem-123")])
+    audited, _ = audit_assessment(a, ANSWER_IDS, [], frozenset())
+    assert audited.citations == []
+    assert audited.verdict == "not_met"
+
+
+def test_memory_citation_on_final_merits_survives_only_when_recalled():
+    good = FinalMeritsAssessment(
+        conclusion="favorable", reasoning="r",
+        citations=[SourceRef(kind="memory", ref="mem-456")],
+    )
+    audited_ok, _ = audit_final_merits(good, ANSWER_IDS, [], frozenset(), RECALLED)
+    assert audited_ok.conclusion == "favorable"
+    assert [c.ref for c in audited_ok.citations] == ["mem-456"]
+
+    bad = FinalMeritsAssessment(
+        conclusion="favorable", reasoning="r",
+        citations=[SourceRef(kind="memory", ref="mem-nope")],
+    )
+    audited_bad, warnings = audit_final_merits(bad, ANSWER_IDS, [], frozenset(), RECALLED)
+    assert audited_bad.conclusion == "uncertain"
+    assert any(w.field == "final_merits.conclusion" for w in warnings)

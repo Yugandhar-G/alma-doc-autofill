@@ -6,24 +6,39 @@ its package was granted, and dispatching any other name returns UNKNOWN_TOOL
 without executing anything. Code owns the registry; the model only ever
 chooses among what it was given.
 """
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Iterable, Iterator
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Iterable, Iterator
 
 from google.genai import types as genai_types
 
 from app.kernel.config import Settings
+
+if TYPE_CHECKING:
+    from app.kernel.memory.service import MemoryService
+    from app.kernel.store.base import MatterStore, TenantScope
 
 
 @dataclass
 class ToolContext:
     """Per-run context handed to every tool invocation. `transcript` is the
     agent's deterministic ground-truth record (kernel.agent.AgentTranscript);
-    typed loosely here to avoid a circular import."""
+    typed loosely here to avoid a circular import.
+
+    The firm-data fields (scope / matter_store / memory) are OPTIONAL and
+    default to None so every existing constructor call keeps working — web
+    agents never set them. Firm-data tools (kernel.tools.corpus) refuse with a
+    plain TOOL_UNAVAILABLE string when scope or matter_store is None; when set,
+    every query is firm-scoped through the TenantScope inside the tool."""
 
     settings: Settings
     transcript: Any
     emit: Callable[[dict], None]
     node: str  # activity-feed lane
+    scope: "TenantScope | None" = None
+    matter_store: "MatterStore | None" = None
+    memory: "MemoryService | None" = None
 
 
 @dataclass(frozen=True)

@@ -58,9 +58,14 @@ class SourceRef(BaseModel):
     kind=doc    → ref is the SHA-256 of an uploaded document; excerpt must be a
                   verbatim quote from that document's extraction
     kind=web    → ref is a URL returned by grounded web enrichment
+    kind=memory → ref is a firm-memory record id (MemoryRecord.id). Stays flat:
+                  the memory id rides the existing `ref` field (no new field).
+                  Valid iff the id was in the DETERMINISTIC set of memory records
+                  actually recalled and shown to the model this run — an id
+                  outside that set is the cross-firm/poisoned case and is stripped.
     """
 
-    kind: Literal["answer", "doc", "web"]
+    kind: Literal["answer", "doc", "web", "memory"]
     ref: str = Field(min_length=1, max_length=512)
     excerpt: str | None = Field(
         None,

@@ -38,6 +38,10 @@ class ScreenerState(BaseModel):
     matrix_reviewed: bool = False
     web_findings: list[WebFinding] = Field(default_factory=list)
     grounded_urls: list[str] = Field(default_factory=list)
+    # Firm-memory ids the model was actually shown this run — the deterministic
+    # allow-list the citation audit checks kind=memory refs against (mirrors
+    # grounded_urls). Wired by a later phase; empty until then (fail-closed).
+    recalled_memory_ids: list[str] = Field(default_factory=list)
     verification: ProfileVerification | None = None
     profile_summary: ProfileSummary | None = None
     assessments: Annotated[list[CriterionAssessment], operator.add] = Field(

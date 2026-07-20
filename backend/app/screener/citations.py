@@ -8,6 +8,10 @@ verified against what the user actually provided:
                 substring-match (whitespace-normalized) that document's
                 extracted key_facts
   kind=web    → ref must be a URL the enrichment tool actually returned
+  kind=memory → ref must be a firm-memory id in the DETERMINISTIC set actually
+                recalled and shown to the model this run (valid_memory_ids).
+                Recall is firm-scoped upstream, so an id outside that set is the
+                cross-firm / poisoned case — stripped like any other overclaim.
 
 Invalid refs are stripped. An assessment whose verdict is better than not_met
 but which retains zero valid citations is downgraded to not_met with a
@@ -39,6 +43,7 @@ def _ref_is_valid(
     valid_answer_ids: frozenset[str],
     corpus: dict[str, str],
     grounded_urls: frozenset[str],
+    valid_memory_ids: frozenset[str],
 ) -> bool:
     if ref.kind == "answer":
         return is_valid_answer_ref(ref.ref, valid_answer_ids)
@@ -50,6 +55,10 @@ def _ref_is_valid(
         return bool(ref.excerpt) and _normalize(ref.excerpt) in text
     if ref.kind == "web":
         return ref.ref in grounded_urls
+    if ref.kind == "memory":
+        # Firm-scoped upstream: an id the model was never shown (out of set) is
+        # the cross-firm / poisoned case, treated exactly like any overclaim.
+        return ref.ref in valid_memory_ids
     return False
 
 
@@ -58,11 +67,19 @@ def audit_refs(
     valid_answer_ids: frozenset[str],
     corpus: dict[str, str],
     grounded_urls: frozenset[str],
+    valid_memory_ids: frozenset[str] = frozenset(),
 ) -> tuple[list[SourceRef], int]:
     """(surviving refs, number stripped). Mechanics live in kernel.audit;
-    this module owns only the validity policy (_ref_is_valid)."""
+    this module owns only the validity policy (_ref_is_valid).
+
+    valid_memory_ids mirrors grounded_urls: the deterministic set of firm-memory
+    ids actually recalled and shown to the model this run. Defaults to the empty
+    set (no memory ref survives) — fail-closed for callers that never recalled."""
     return _kernel_audit_refs(
-        refs, lambda ref: _ref_is_valid(ref, valid_answer_ids, corpus, grounded_urls)
+        refs,
+        lambda ref: _ref_is_valid(
+            ref, valid_answer_ids, corpus, grounded_urls, valid_memory_ids
+        ),
     )
 
 
@@ -71,11 +88,12 @@ def audit_assessment(
     valid_answer_ids: frozenset[str],
     docs: list[EvidenceDocRecord],
     grounded_urls: frozenset[str],
+    valid_memory_ids: frozenset[str] = frozenset(),
 ) -> tuple[CriterionAssessment, list[FieldWarning]]:
     """Strip unverifiable citations; downgrade uncited positive verdicts."""
     corpus = _doc_corpus(docs)
     kept, stripped = audit_refs(
-        assessment.citations, valid_answer_ids, corpus, grounded_urls
+        assessment.citations, valid_answer_ids, corpus, grounded_urls, valid_memory_ids
     )
     warnings: list[FieldWarning] = []
     if stripped:
@@ -105,11 +123,14 @@ def audit_final_merits(
     valid_answer_ids: frozenset[str],
     docs: list[EvidenceDocRecord],
     grounded_urls: frozenset[str],
+    valid_memory_ids: frozenset[str] = frozenset(),
 ) -> tuple[FinalMeritsAssessment, list[FieldWarning]]:
     """Same strip rule; a favorable conclusion without citations degrades to
     uncertain (never silently favorable on nothing)."""
     corpus = _doc_corpus(docs)
-    kept, stripped = audit_refs(merits.citations, valid_answer_ids, corpus, grounded_urls)
+    kept, stripped = audit_refs(
+        merits.citations, valid_answer_ids, corpus, grounded_urls, valid_memory_ids
+    )
     warnings: list[FieldWarning] = []
     if stripped:
         warnings.append(

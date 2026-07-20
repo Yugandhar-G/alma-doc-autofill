@@ -49,7 +49,11 @@ def _sanitize(matrix: EvidenceMatrix, state: ScreenerState) -> tuple[EvidenceMat
             )
         )
     for item in matrix.items[:_MAX_ITEMS]:
-        kept_refs, stripped = audit_refs(item.sources, valid_answers, corpus, frozenset())
+        # grounded_urls + valid_memory_ids both empty here: matrix compilation
+        # never consults web enrichment or firm memory (see screener contract).
+        kept_refs, stripped = audit_refs(
+            item.sources, valid_answers, corpus, frozenset(), frozenset()
+        )
         known_criteria = [cid for cid in item.criterion_ids if cid in CRITERIA_BY_ID]
         if not kept_refs:
             dropped += 1
