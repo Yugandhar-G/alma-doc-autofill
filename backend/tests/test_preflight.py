@@ -139,9 +139,12 @@ def test_completeness_unknown_case_type_is_silent():
 
 
 def test_edition_dormant_without_registry_entry():
-    # Declared edition present but production registry is empty → silence.
+    # Declared edition present but NO registry entry for the form → silence.
+    # (The production registry now derives from the verified forms plane, so
+    # dormancy is proven by emptying the derived map, not by case accidents.)
     packet = _packet([_g28(family_name="A")], declared_editions={"g-28": "03/01/20"})
-    assert form_edition_currency(packet) == []
+    with patch.object(form_editions, "_derived_registry", lambda: {}):
+        assert form_edition_currency(packet) == []
 
 
 def test_edition_dormant_without_declared_edition():
