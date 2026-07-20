@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
+from app.kernel.auth import install_auth
 from app.kernel.observability import (
     TelemetryValue,
     flush as observability_flush,
@@ -64,6 +65,7 @@ def create_app(registry: tuple | None = None) -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(title="yunaki-doc-autofill", lifespan=_lifespan)
+    install_auth(app)  # AuthError → 401 in the ApiResponse envelope
     app.include_router(screener_router)  # legacy screener session API
     for package in packages:
         if package.router_factory is not None:

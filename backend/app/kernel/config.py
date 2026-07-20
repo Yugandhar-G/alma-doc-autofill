@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # Storage (Supabase when set, local disk otherwise)
     supabase_url: str | None = None
     supabase_service_key: str | None = None
+    # Supabase Auth (GoTrue) HS256 signing secret — verifies desktop-app access
+    # tokens statelessly. Unset → no-account local mode (auth fully bypassed).
+    supabase_jwt_secret: str | None = None
     supabase_bucket: str = "documents"
     local_storage_dir: str = "uploads"
 
