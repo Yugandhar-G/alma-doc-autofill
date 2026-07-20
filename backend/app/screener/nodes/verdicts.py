@@ -5,7 +5,12 @@ import logging
 
 from app.config import get_settings
 from app.schemas import VisaVerdict
-from app.screener.criteria import EB1A_THRESHOLD, O1A_THRESHOLD, criteria_for
+from app.screener.criteria import (
+    EB1A_THRESHOLD,
+    NIW_THRESHOLD,
+    O1A_THRESHOLD,
+    criteria_for,
+)
 from app.screener.nodes import common
 from app.screener.nodes.common import count_verdicts, emit, render_assessments
 from app.screener.prompts import verdict_prompt
@@ -13,7 +18,7 @@ from app.screener.state import ScreenerState
 
 logger = logging.getLogger("yunaki.screener.verdict")
 
-_THRESHOLDS = {"O1A": O1A_THRESHOLD, "EB1A": EB1A_THRESHOLD}
+_THRESHOLDS = {"O1A": O1A_THRESHOLD, "EB1A": EB1A_THRESHOLD, "NIW": NIW_THRESHOLD}
 
 
 async def verdict(state: ScreenerState) -> dict:

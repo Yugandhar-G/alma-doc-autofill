@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 
 from app.schemas.common import FieldWarning
 
-VisaType = Literal["O1A", "EB1A"]
+VisaType = Literal["O1A", "EB1A", "NIW"]
 CriterionVerdict = Literal["met", "likely", "weak", "not_met"]
 
 DISCLAIMER = (
@@ -241,6 +241,38 @@ class VisaVerdict(BaseModel):
     next_steps: list[str] = Field(default_factory=list, max_length=10)
 
 
+class ExhibitEntry(BaseModel):
+    """One line in the draft exhibit index: a surviving (post-audit) piece of
+    evidence, numbered and tied to the criterion it supports. Built by pure
+    code from the audited matrix — never model-generated. Flat by design (it
+    is walked by the schema-lint alongside the response-schema models).
+
+    doc_ref carries the source document's sha256 only for kind=doc evidence;
+    answer/web evidence is identified by source_kind + claim (no doc_ref)."""
+
+    exhibit_no: str = Field(min_length=1, max_length=32)
+    criterion_id: str = Field(min_length=1, max_length=64)
+    claim: str = Field(min_length=1, max_length=1000)
+    doc_ref: str | None = Field(
+        None, max_length=128, description="Source document sha256 (kind=doc only)."
+    )
+    source_kind: Literal["answer", "doc", "web"]
+    note: str = Field("", max_length=512)
+
+
+class ExhibitIndex(BaseModel):
+    """Draft exhibit map for attorney review: every surviving evidence source
+    grouped and numbered per criterion, plus the applicable criteria that no
+    surviving evidence covers. No max_length on entries — same response-schema
+    constraint as EvidenceMatrix.items; the derivation bounds it deterministically."""
+
+    entries: list[ExhibitEntry] = Field(default_factory=list)
+    gaps: list[str] = Field(
+        default_factory=list,
+        description="Applicable criterion ids with zero supporting exhibit entries.",
+    )
+
+
 class ScreenerReport(BaseModel):
     session_id: str
     visa_targets: list[VisaType]
@@ -249,5 +281,6 @@ class ScreenerReport(BaseModel):
     verdicts: list[VisaVerdict] = Field(default_factory=list)
     assessments: list[CriterionAssessment] = Field(default_factory=list)
     final_merits: FinalMeritsAssessment | None = None
+    exhibit_index: ExhibitIndex | None = None
     warnings: list[FieldWarning] = Field(default_factory=list)
     disclaimer: str = DISCLAIMER  # constant — never model-generated

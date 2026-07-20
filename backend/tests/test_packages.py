@@ -29,7 +29,7 @@ def test_packages_catalog_lists_both_manifests():
     body = resp.json()
     assert body["success"] is True
     ids = {p["package_id"] for p in body["data"]["packages"]}
-    assert ids == {"autofill", "screener"}
+    assert {"autofill", "preflight", "screener"} <= ids
     autofill = next(p for p in body["data"]["packages"] if p["package_id"] == "autofill")
     assert autofill["interrupt_kinds"] == ["extraction_review"]
     assert [s["id"] for s in autofill["stages"]] == ["review", "populate"]

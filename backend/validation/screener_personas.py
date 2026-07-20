@@ -226,6 +226,55 @@ PERSONAS: tuple[ScreenerPersona, ...] = (
             "EB1A": {"not_recommended"},
         },
     ),
+    # --- NIW (Dhanasar three-prong) personas. Conservative bands: NIW turns on
+    # the endeavor's national importance and the petitioner's positioning, not a
+    # criteria count, so "likely/weak" is the honest ceiling for a strong-but-
+    # not-airtight record. The intake fields map to prongs via the matrix. ---
+    ScreenerPersona(
+        name="09-niw-well-positioned-researcher",
+        visa_targets=("NIW",),
+        intake=IntakeAnswers(
+            field_of_endeavor="Grid-scale battery storage to decarbonize the U.S. "
+            "power grid — a national clean-energy priority.",
+            current_role="Staff scientist leading a DOE-funded storage program; "
+            "prior work deployed at two utilities.",
+            original_contributions="Developed an electrode chemistry now piloted by "
+            "two U.S. utilities; DOE cited the approach in a grid-resilience roadmap.",
+            publications_summary="30 peer-reviewed papers on energy storage, 3,500 "
+            "citations; several with national-lab co-authors.",
+            awards=["DOE Early Career Research Award 2021 (national)"],
+        ),
+        evidence_docs=(
+            _doc("d", "other", "DOE grid-resilience roadmap excerpt",
+                 ["The petitioner's electrode chemistry is identified as a promising "
+                  "pathway for grid-scale storage",
+                  "Grid-scale storage is a national priority for decarbonization"]),
+        ),
+        expected={
+            # Substantial merit + national importance is well documented here.
+            "niw_merit_importance": {"met", "likely"},
+            # Track record + DOE funding + deployments → well positioned.
+            "niw_well_positioned": {"met", "likely", "weak"},
+            # Prong 3 (waiver balance) is rarely airtight from intake alone.
+            "niw_benefit_waiver": {"likely", "weak", "not_met"},
+        },
+        expected_recommendation={"NIW": {"possible", "weak"}},
+    ),
+    ScreenerPersona(
+        name="10-niw-thin-endeavor-underdocumented",
+        visa_targets=("NIW",),
+        intake=IntakeAnswers(
+            field_of_endeavor="Freelance web design for local small businesses.",
+            current_role="Independent contractor building marketing sites; no "
+            "national scope claimed.",
+            original_contributions="Redesigned websites for a handful of local shops.",
+        ),
+        # Local-benefit endeavor with no national importance and no positioning
+        # evidence: all three prongs should stay conservative. Any met/likely is
+        # an overclaim.
+        expected={},
+        expected_recommendation={"NIW": {"not_recommended", "weak"}},
+    ),
 )
 
 

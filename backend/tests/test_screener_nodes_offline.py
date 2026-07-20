@@ -118,6 +118,9 @@ def test_fan_out_covers_union_of_targets():
     assert len(fan_out_assessments(_state(("O1A",)))) == 8
     assert len(fan_out_assessments(_state(("O1A", "EB1A")))) == 10
     assert len(fan_out_assessments(_state(("EB1A",)))) == 10
+    # NIW fans out over its three Dhanasar prongs; combined targets add them.
+    assert len(fan_out_assessments(_state(("NIW",)))) == 3
+    assert len(fan_out_assessments(_state(("EB1A", "NIW")))) == 13
 
 
 def test_merits_gate_requires_eb1a_target():
@@ -228,6 +231,72 @@ async def test_review_edit_is_revalidated_and_fabricated_source_stripped(fake_ll
 async def test_disclaimer_is_constant_and_present(fake_llm):
     result = await _run_through_review(_state(("O1A",)))
     assert "not a legal determination" in result["report"].disclaimer
+
+
+async def test_report_carries_exhibit_index_from_reviewed_matrix(fake_llm):
+    """The draft exhibit index rides the report: the one reviewed matrix claim
+    (awards ← awards[0]) becomes one numbered exhibit; the remaining applicable
+    O-1A criteria are gaps."""
+    result = await _run_through_review(_state(("O1A",)))
+    index = result["report"].exhibit_index
+    assert index is not None
+    assert [(e.exhibit_no, e.criterion_id) for e in index.entries] == [("1", "awards")]
+    assert index.entries[0].source_kind == "answer"
+    o1a_ids = {s.id for s in criteria_for("O1A")}
+    assert set(index.gaps) == o1a_ids - {"awards"}
+
+
+async def test_niw_only_run_flows_through_without_special_casing(monkeypatch):
+    """A NIW-only run assesses the three Dhanasar prongs, produces a NIW
+    verdict, never opens the EB-1A Kazarian gate, and carries an exhibit index
+    derived from the reviewed matrix — all through the generic node path."""
+
+    async def niw_call(settings, prompt, wrapper, **kwargs):
+        if wrapper is EvidenceMatrix:
+            return EvidenceMatrix(
+                items=[
+                    {
+                        "claim": "Leads a DOE-funded national storage program",
+                        "criterion_ids": ["niw_merit_importance", "niw_well_positioned"],
+                        "sources": [{"kind": "answer", "ref": "field_of_endeavor"}],
+                    }
+                ]
+            )
+        if wrapper is CriterionAssessment:
+            return CriterionAssessment(
+                criterion_id="relabel-me",
+                verdict="likely",
+                reasoning="prong evidence maps onto Dhanasar",
+                citations=[SourceRef(kind="answer", ref="field_of_endeavor")],
+            )
+        if wrapper is ProfileSummary:
+            return ProfileSummary(headline="h")
+        return VisaVerdict(
+            visa="O1A", recommendation="possible", confidence="medium", summary="s"
+        )
+
+    monkeypatch.setattr("app.screener.nodes.common.generate", niw_call)
+    state = ScreenerState(
+        session_id="niw-session",
+        visa_targets=["NIW"],
+        intake=IntakeAnswers(field_of_endeavor="Grid-scale storage, national priority"),
+    )
+    result = await _run_through_review(state)
+    report = result["report"]
+
+    assert {a.criterion_id for a in report.assessments} == {
+        s.id for s in criteria_for("NIW")
+    }
+    assert report.final_merits is None  # NIW never triggers Kazarian step 2
+    niw_verdict = next(v for v in report.verdicts if v.visa == "NIW")
+    assert niw_verdict.criteria_likely == 3
+    # Matrix covered prongs 1 & 2; prong 3 has no evidence → exhibit gap.
+    index = report.exhibit_index
+    assert {e.criterion_id for e in index.entries} == {
+        "niw_merit_importance",
+        "niw_well_positioned",
+    }
+    assert index.gaps == ["niw_benefit_waiver"]
 
 
 async def test_single_criterion_failure_degrades_not_aborts(monkeypatch, fake_llm):

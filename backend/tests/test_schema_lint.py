@@ -19,6 +19,7 @@ import annotated_types
 import pytest
 from pydantic import BaseModel
 
+from app.packages.preflight.schemas import PreflightFinding, PreflightReport
 from app.schemas import (
     AttorneyInfo,
     BeneficiaryInfo,
@@ -27,6 +28,7 @@ from app.schemas import (
     EligibilityInfo,
     EvidenceItem,
     EvidenceMatrix,
+    ExhibitIndex,
     FinalMeritsAssessment,
     G28Data,
     PassportData,
@@ -56,6 +58,13 @@ RESPONSE_SCHEMA_MODELS: tuple[type[BaseModel], ...] = (
     ClaimVerification,
     ProfileSummary,
     VisaVerdict,
+    # exhibit index (pure-code artifact, but flatness is lint-enforced so it
+    # stays Gemini-safe if a future phase ever hands it to the model)
+    ExhibitIndex,
+    # preflight (pure-code report contracts; lint-clean so a future doc-type
+    # plane that drafts findings via a model inherits a Gemini-safe schema)
+    PreflightFinding,
+    PreflightReport,
 )
 
 

@@ -6,7 +6,7 @@ import logging
 from app.config import get_settings
 from app.schemas import EvidenceMatrix, FieldWarning
 from app.screener.citations import audit_refs, _doc_corpus
-from app.screener.criteria import CRITERIA_BY_ID
+from app.screener.criteria import CRITERIA_BY_ID, criteria_for_targets
 from app.screener.intake import answer_index, render_intake
 from app.screener.nodes import common
 from app.screener.nodes.common import emit, short_hash
@@ -106,9 +106,13 @@ async def compile_matrix(state: ScreenerState) -> dict:
             }
         )
 
+    criterion_ids = ", ".join(
+        spec.id for spec in criteria_for_targets(list(state.visa_targets))
+    )
     prompt = compile_prompt(
         render_intake(state.intake) if state.intake else "(none)",
         _render_docs(state),
+        criterion_ids,
     )
     try:
         raw = await common.generate(

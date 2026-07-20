@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     # Workflow-run checkpointing (per package; one DB each until the matter
     # store consolidates them)
     autofill_checkpoint_path: str = "uploads/autofill/checkpoints.db"
+    preflight_checkpoint_path: str = "uploads/preflight/checkpoints.db"
 
     # Screener (O-1A / EB-1A eligibility decision support)
     screener_checkpoint_path: str = "uploads/screener/checkpoints.db"

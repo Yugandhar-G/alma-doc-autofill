@@ -9,6 +9,7 @@ from app.schemas import (
     CriterionAssessment,
     EvidenceDocRecord,
     EvidenceMatrix,
+    ExhibitIndex,
     FieldWarning,
     FinalMeritsAssessment,
     IntakeAnswers,
@@ -44,6 +45,7 @@ class ScreenerState(BaseModel):
     )
     final_merits: FinalMeritsAssessment | None = None
     verdicts: list[VisaVerdict] = Field(default_factory=list)
+    exhibit_index: ExhibitIndex | None = None
     report: ScreenerReport | None = None
     warnings: Annotated[list[FieldWarning], operator.add] = Field(default_factory=list)
 

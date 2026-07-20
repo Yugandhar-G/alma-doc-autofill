@@ -4,24 +4,36 @@ import logging
 
 from app.schemas import FieldWarning, ScreenerReport, VisaVerdict
 from app.screener.citations import audit_assessment, audit_final_merits
-from app.screener.criteria import EB1A_THRESHOLD, O1A_THRESHOLD, criteria_for
+from app.screener.criteria import (
+    EB1A_THRESHOLD,
+    NIW_THRESHOLD,
+    O1A_THRESHOLD,
+    criteria_for,
+)
 from app.screener.intake import answer_index
 from app.screener.nodes.common import count_verdicts, emit
 from app.screener.state import ScreenerState
 
 logger = logging.getLogger("yunaki.screener.report")
 
-_THRESHOLDS = {"O1A": O1A_THRESHOLD, "EB1A": EB1A_THRESHOLD}
+_THRESHOLDS = {"O1A": O1A_THRESHOLD, "EB1A": EB1A_THRESHOLD, "NIW": NIW_THRESHOLD}
 
 
 def _cap_recommendation(
     verdict: VisaVerdict, met: int, likely: int, one_time_award: bool
 ) -> tuple[VisaVerdict, FieldWarning | None]:
-    """Kazarian step-1 arithmetic as a deterministic ceiling on the model's
-    narrative: below-threshold records cannot be 'possible' or better, and
-    'strong' requires the threshold in outright met criteria. The one-time
-    major-award path bypasses the criteria count by regulation."""
-    if one_time_award:
+    """Deterministic ceiling on the model's narrative from criteria arithmetic.
+
+    O-1A / EB-1A (Kazarian step 1): a below-threshold count cannot be
+    'possible' or better, and 'strong' requires the threshold in outright met
+    criteria. The one-time major-award path bypasses the count by regulation.
+
+    NIW: all three Dhanasar prongs are REQUIRED, so the threshold equals the
+    prong count — any prong short of met/likely (met + likely < 3) caps to
+    'weak', and 'strong' still requires all three outright met. There is no
+    one-time-award bypass for NIW (that path is an extraordinary-ability
+    concept, irrelevant to the national-interest waiver)."""
+    if one_time_award and verdict.visa != "NIW":
         return verdict, None
     threshold = _THRESHOLDS[verdict.visa]
     capped = verdict.recommendation
@@ -92,6 +104,7 @@ async def assemble_report(state: ScreenerState) -> dict:
         verdicts=verdicts,
         assessments=audited,
         final_merits=merits,
+        exhibit_index=state.exhibit_index,
         warnings=[*state.warnings, *new_warnings],
     )
     emit(

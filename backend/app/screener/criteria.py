@@ -2,14 +2,25 @@
 
 Every prompt that mentions a criterion interpolates from this registry, so
 the legal framing lives in exactly one reviewable place. Refs verified
-against 8 CFR 214.2(o)(3)(iii) (O-1A) and 8 CFR 204.5(h)(3) (EB-1A).
+against 8 CFR 214.2(o)(3)(iii) (O-1A), 8 CFR 204.5(h)(3) (EB-1A), and — for
+the national-interest waiver — INA 203(b)(2)(B)(i) / 8 CFR 204.5(k) as read
+through Matter of Dhanasar, 26 I&N Dec. 884 (AAO 2016).
+
+Registry-as-data proof: NIW plugs in as three more CriterionSpec rows with a
+new niw_ref channel and NO new branching. There is no Kazarian two-step for
+NIW — its arithmetic (all three Dhanasar prongs required) lives in the report
+cap, and routing (route_merits) stays EB-1A-only.
 """
 from dataclasses import dataclass
 
-VisaType = str  # "O1A" | "EB1A" (Literal lives in schemas; this module stays stdlib-only)
+VisaType = str  # "O1A" | "EB1A" | "NIW" (Literal lives in schemas; this module stays stdlib-only)
 
 O1A_THRESHOLD = 3
 EB1A_THRESHOLD = 3
+# NIW is not a "3 of N" count: all three Dhanasar prongs are required. The
+# threshold equals the number of prongs so the shared cap arithmetic collapses
+# to "any prong short of met/likely caps the recommendation".
+NIW_THRESHOLD = 3
 
 
 @dataclass(frozen=True)
@@ -21,6 +32,7 @@ class CriterionSpec:
     description: str         # regulatory language, paraphrased
     strong_evidence: tuple[str, ...]   # what adjudicators actually accept
     rfe_patterns: tuple[str, ...]      # common RFE triggers for this criterion
+    niw_ref: str | None = None  # NIW (Dhanasar prong) basis, None for O-1A/EB-1A rows
 
     @property
     def applies_to(self) -> frozenset[str]:
@@ -29,6 +41,8 @@ class CriterionSpec:
             visas.add("O1A")
         if self.eb1a_ref:
             visas.add("EB1A")
+        if self.niw_ref:
+            visas.add("NIW")
         return frozenset(visas)
 
 
@@ -228,6 +242,86 @@ CRITERIA: tuple[CriterionSpec, ...] = (
         rfe_patterns=(
             "Self-reported revenue with no third-party corroboration",
             "Business revenue presented for a non-performing-arts field",
+        ),
+    ),
+    # --- NIW (EB-2 national-interest waiver) — the three Matter of Dhanasar
+    # prongs. All three are REQUIRED (not "3 of N"); there is no Kazarian
+    # two-step and no one-time-award bypass. Basis: INA 203(b)(2)(B)(i),
+    # 8 CFR 204.5(k), Matter of Dhanasar, 26 I&N Dec. 884 (AAO 2016). ---
+    CriterionSpec(
+        id="niw_merit_importance",
+        title="Substantial merit and national importance of the proposed endeavor",
+        o1a_ref=None,
+        eb1a_ref=None,
+        niw_ref="INA 203(b)(2)(B)(i); 8 CFR 204.5(k); Matter of Dhanasar prong 1",
+        description=(
+            "The proposed endeavor has both substantial merit and national "
+            "importance. Merit may be shown in business, science, technology, "
+            "culture, health, or education; importance turns on the endeavor's "
+            "prospective impact broadly, not merely on the petitioner's employer "
+            "or immediate locality."
+        ),
+        strong_evidence=(
+            "A specific, articulated endeavor (not just a job title) with a defined problem it addresses",
+            "Evidence the endeavor's impact reaches beyond one employer or region — national scope",
+            "Government, industry, or funding-body statements that the work addresses a recognized priority",
+            "Metrics, adoption, or third-party analysis showing the field-level significance of the endeavor",
+        ),
+        rfe_patterns=(
+            "Endeavor described as ordinary duties of an occupation rather than a defined undertaking",
+            "Merit shown but national importance argued only from the employer's or a locality's benefit",
+            "Prospective-impact claims with no evidence beyond the petitioner's assertions",
+        ),
+    ),
+    CriterionSpec(
+        id="niw_well_positioned",
+        title="Well positioned to advance the proposed endeavor",
+        o1a_ref=None,
+        eb1a_ref=None,
+        niw_ref="INA 203(b)(2)(B)(i); 8 CFR 204.5(k); Matter of Dhanasar prong 2",
+        description=(
+            "The petitioner is well positioned to advance the proposed endeavor, "
+            "assessed from their education, skills, record of success, a model or "
+            "plan for future activity, progress toward the endeavor, and the "
+            "interest of relevant parties. This prong does not require a "
+            "guarantee of ultimate success."
+        ),
+        strong_evidence=(
+            "Record of prior success in the same or a closely related endeavor (traction, results, adoption)",
+            "Advanced degree or demonstrated expertise directly tied to the endeavor",
+            "A concrete plan or model for future activity with evidence of progress already made",
+            "Letters or commitments from users, funders, agencies, or collaborators showing interest and reliance",
+        ),
+        rfe_patterns=(
+            "Qualifications listed with no link to the specific endeavor being advanced",
+            "A plan asserted with no evidence of prior progress or independent interest",
+            "Reliance on generic praise letters that do not speak to the petitioner's positioning",
+        ),
+    ),
+    CriterionSpec(
+        id="niw_benefit_waiver",
+        title="On balance, beneficial to waive the job offer and labor certification",
+        o1a_ref=None,
+        eb1a_ref=None,
+        niw_ref="INA 203(b)(2)(B)(i); 8 CFR 204.5(k); Matter of Dhanasar prong 3",
+        description=(
+            "On balance, it would be beneficial to the United States to waive the "
+            "job-offer requirement and thus the labor certification. Factors "
+            "include impracticality of labor certification, the national benefit "
+            "even if qualified U.S. workers are available, and whether the "
+            "endeavor's urgency or the petitioner's contributions make the waiver "
+            "worthwhile despite the protective purpose of labor certification."
+        ),
+        strong_evidence=(
+            "Reasons a labor certification is impractical for this endeavor (self-employment, entrepreneurship, evolving work)",
+            "Evidence the national benefit is significant enough to outweigh the protective aim of labor certification",
+            "Urgency or time-sensitivity of the endeavor that a labor-certification process would frustrate",
+            "Petitioner's demonstrated contributions supporting that the U.S. benefits from waiving the offer",
+        ),
+        rfe_patterns=(
+            "Prongs 1 and 2 argued but prong 3 left as a bare conclusion",
+            "No explanation why labor certification is impractical or why the benefit outweighs it",
+            "Waiver argued solely from the petitioner's convenience rather than national benefit",
         ),
     ),
 )

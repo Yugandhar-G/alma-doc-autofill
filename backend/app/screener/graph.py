@@ -8,6 +8,7 @@ final-merits gate opens). No LLM ever chooses the path.
           │                     budgeted, transcript-audited
           → plan_assessments ─(Send fan-out)→ assess_one×N
           → merits_gate → [final_merits?] → verdict → profile_summary
+          → exhibit_index [pure: draft exhibit map from audited matrix]
           → assemble_report → END
 """
 from langgraph.graph import END, START, StateGraph
@@ -18,6 +19,7 @@ from app.screener.nodes import (
     assemble_report,
     assess_one,
     compile_matrix,
+    exhibit_index,
     final_merits,
     profile_summary,
     review_gate,
@@ -86,6 +88,7 @@ def build_graph(checkpointer=None):
     graph.add_node("final_merits", final_merits)
     graph.add_node("verdict", verdict)
     graph.add_node("profile_summary", profile_summary)
+    graph.add_node("exhibit_index", exhibit_index)
     graph.add_node("assemble_report", assemble_report)
 
     graph.add_edge(START, "compile_matrix")
@@ -103,6 +106,7 @@ def build_graph(checkpointer=None):
     )
     graph.add_edge("final_merits", "verdict")
     graph.add_edge("verdict", "profile_summary")
-    graph.add_edge("profile_summary", "assemble_report")
+    graph.add_edge("profile_summary", "exhibit_index")
+    graph.add_edge("exhibit_index", "assemble_report")
     graph.add_edge("assemble_report", END)
     return graph.compile(checkpointer=checkpointer)

@@ -24,6 +24,7 @@ def _criterion_block(spec: CriterionSpec) -> str:
         ref for ref in (
             f"O-1A: {spec.o1a_ref}" if spec.o1a_ref else None,
             f"EB-1A: {spec.eb1a_ref}" if spec.eb1a_ref else None,
+            f"NIW: {spec.niw_ref}" if spec.niw_ref else None,
         ) if ref
     )
     strong = "\n".join(f"  - {item}" for item in spec.strong_evidence)
@@ -51,15 +52,13 @@ def _evidence_section(intake_rendered: str, matrix_rendered: str | None,
     return "\n\n".join(parts)
 
 
-def compile_prompt(intake_rendered: str, docs_rendered: str) -> str:
-    return f"""You are compiling an EVIDENCE MATRIX for a USCIS extraordinary-ability
-screening (O-1A / EB-1A): every probative claim in the record, mapped to the
-criteria it could support, with verifiable sources. A human will review and
-edit this matrix before any criterion is assessed.
+def compile_prompt(intake_rendered: str, docs_rendered: str, criterion_ids: str) -> str:
+    return f"""You are compiling an EVIDENCE MATRIX for a USCIS eligibility
+screening: every probative claim in the record, mapped to the criteria it
+could support, with verifiable sources. A human will review and edit this
+matrix before any criterion is assessed.
 
-CRITERION IDS: awards, membership, published_material, judging,
-original_contributions, scholarly_articles, critical_capacity, high_salary,
-exhibitions, commercial_success.
+CRITERION IDS (map each claim to any it could plausibly support): {criterion_ids}
 
 INTAKE ANSWERS (cite by [answer_id]):
 {intake_rendered}
