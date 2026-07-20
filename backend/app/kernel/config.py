@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     supabase_bucket: str = "documents"
     local_storage_dir: str = "uploads"
 
+    # Matter store — firm-scoped data layer (matters, runs, interrupts, memory).
+    # Supabase is the firm-sync plane when configured; local SQLite otherwise.
+    matter_store_path: str = "uploads/matters.db"
+
     # Upload guardrails
     max_file_mb: int = 10
     max_pdf_pages: int = 10
