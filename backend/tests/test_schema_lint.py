@@ -11,14 +11,20 @@ The rules (verified against live Gemini, see EvidenceMatrix.items):
 Written generically: RESPONSE_SCHEMA_MODELS is the one list to extend when a
 future package adds response-schema models — every nested model is walked
 recursively with a visited set, so listing the roots is enough.
-"""
-import types
-import typing
 
-import annotated_types
+The lint walk and per-rule predicates live in app.kernel.schema_lint so the
+package-author acceptance pipeline enforces byte-identical rules on candidate
+packages. This module keeps the installed-model roster and the pytest bodies.
+"""
 import pytest
 from pydantic import BaseModel
 
+from app.kernel.schema_lint import (
+    all_models,
+    discriminator_offenders,
+    json_schema_ok,
+    max_items_offenders,
+)
 from app.packages.matter_intake.schemas import (
     ChaseDraft,
     GapFinding,
@@ -28,6 +34,11 @@ from app.packages.matter_intake.schemas import (
     ResearchAnswer,
 )
 from app.packages.preflight.schemas import PreflightFinding, PreflightReport
+from app.packages.rfe_response.schemas import (
+    ResponseChecklist,
+    RfeNotice,
+    RfeResponseReport,
+)
 from app.schemas import (
     AttorneyInfo,
     BeneficiaryInfo,
@@ -73,6 +84,13 @@ RESPONSE_SCHEMA_MODELS: tuple[type[BaseModel], ...] = (
     # plane that drafts findings via a model inherits a Gemini-safe schema)
     PreflightFinding,
     PreflightReport,
+    # rfe-response (RfeNotice on the vision call + ResponseChecklist on the
+    # distillation call are handed to Gemini directly; RfeResponseReport is a
+    # pure-code artifact kept lint-clean, its nested RfeGround/ChecklistItem
+    # reached by the walk)
+    RfeNotice,
+    ResponseChecklist,
+    RfeResponseReport,
     # matter-intake (chase / planner / ask distillation schemas — handed to
     # Gemini directly, so flatness is enforced here)
     GapFindings,
@@ -82,42 +100,6 @@ RESPONSE_SCHEMA_MODELS: tuple[type[BaseModel], ...] = (
     PlanStep,
     ResearchAnswer,
 )
-
-
-def _nested_models(annotation: object) -> list[type[BaseModel]]:
-    """Every BaseModel subclass reachable inside a type annotation
-    (Optional/Union, list/dict/tuple, Annotated — all unwrapped)."""
-    found: list[type[BaseModel]] = []
-    if isinstance(annotation, type) and issubclass(annotation, BaseModel):
-        found.append(annotation)
-    for arg in typing.get_args(annotation):
-        found.extend(_nested_models(arg))
-    return found
-
-
-def _is_list_of_models(annotation: object) -> bool:
-    """True when the annotation is (or contains, via Optional/Union) a
-    list/tuple/set whose element type reaches a BaseModel."""
-    origin = typing.get_origin(annotation)
-    if origin in (typing.Union, types.UnionType):
-        return any(_is_list_of_models(arg) for arg in typing.get_args(annotation))
-    if origin in (list, tuple, set, frozenset):
-        return any(_nested_models(arg) for arg in typing.get_args(annotation))
-    return False
-
-
-def all_models(roots: typing.Iterable[type[BaseModel]]) -> list[type[BaseModel]]:
-    """Recursive walk over the model graph with a visited set."""
-    visited: dict[type[BaseModel], None] = {}  # dict → deterministic order
-    stack = list(roots)
-    while stack:
-        model = stack.pop(0)
-        if model in visited:
-            continue
-        visited[model] = None
-        for field in model.model_fields.values():
-            stack.extend(_nested_models(field.annotation))
-    return list(visited)
 
 
 MODELS = all_models(RESPONSE_SCHEMA_MODELS)
@@ -135,11 +117,7 @@ def test_walk_reaches_nested_models() -> None:
 
 @pytest.mark.parametrize("model", MODELS, ids=lambda m: m.__name__)
 def test_no_discriminated_unions(model: type[BaseModel]) -> None:
-    offenders = [
-        name
-        for name, field in model.model_fields.items()
-        if field.discriminator is not None
-    ]
+    offenders = discriminator_offenders(model)
     assert not offenders, (
         f"{model.__name__} uses pydantic discriminator on {offenders}; "
         "Gemini response_schema does not support discriminated unions"
@@ -148,12 +126,7 @@ def test_no_discriminated_unions(model: type[BaseModel]) -> None:
 
 @pytest.mark.parametrize("model", MODELS, ids=lambda m: m.__name__)
 def test_no_max_items_on_list_of_model_fields(model: type[BaseModel]) -> None:
-    offenders = []
-    for name, field in model.model_fields.items():
-        if not _is_list_of_models(field.annotation):
-            continue  # caps on scalar lists (list[str], ...) are fine
-        if any(isinstance(meta, annotated_types.MaxLen) for meta in field.metadata):
-            offenders.append(name)
+    offenders = max_items_offenders(model)
     assert not offenders, (
         f"{model.__name__}.{offenders} sets max_length/maxItems on a list of "
         "nested models — Gemini rejects maxItems on lists of objects "
@@ -163,5 +136,4 @@ def test_no_max_items_on_list_of_model_fields(model: type[BaseModel]) -> None:
 
 @pytest.mark.parametrize("model", MODELS, ids=lambda m: m.__name__)
 def test_model_json_schema_serializes(model: type[BaseModel]) -> None:
-    schema = model.model_json_schema()
-    assert isinstance(schema, dict) and schema.get("type", "object") == "object"
+    assert json_schema_ok(model)

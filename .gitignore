@@ -14,6 +14,11 @@ backend/tests/.extraction_cache/
 Alma_Assignment_Master_Brief.md
 LOOM_SCRIPT.md
 
+# Agent-authored package candidates — runtime sandbox, never committed
+# (keep the directory itself, drop everything the fan-out drafts into it)
+backend/app/packages/_candidates/*
+!backend/app/packages/_candidates/.gitkeep
+
 # Python
 __pycache__/
 *.pyc
