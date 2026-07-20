@@ -24,27 +24,51 @@ export default function Home() {
       <main className="mx-auto w-full max-w-4xl flex-1 px-5 py-10">
         <AutofillFlow />
 
-        <Link
-          href="/screener"
-          className="group mt-12 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface px-5 py-4 shadow-[0_1px_2px_rgba(28,39,51,0.04)] transition-colors duration-150 hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          <span>
-            <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-deep">
-              New
-            </span>
-            <span className="block font-display text-lg">O-1A / EB-1A Visa Screener</span>
-            <span className="block text-xs text-ink-soft">
-              Structured intake, evidence review, and criterion-by-criterion assessment — every
-              verdict cited, nothing guessed.
-            </span>
-          </span>
-          <span
-            aria-hidden
-            className="text-lg text-ink-faint transition-transform duration-150 group-hover:translate-x-1 group-hover:text-accent-deep"
+        <div className="mt-12 grid gap-3 sm:grid-cols-2">
+          <Link
+            href="/matters"
+            className="group flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface px-5 py-4 shadow-[0_1px_2px_rgba(28,39,51,0.04)] transition-colors duration-150 hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
-            →
-          </span>
-        </Link>
+            <span>
+              <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-deep">
+                Workspace
+              </span>
+              <span className="block font-display text-lg">Matters workspace</span>
+              <span className="block text-xs text-ink-soft">
+                The attorney work queue — matters, documents, workflow runs, and the firm review
+                inbox in one place.
+              </span>
+            </span>
+            <span
+              aria-hidden
+              className="text-lg text-ink-faint transition-transform duration-150 group-hover:translate-x-1 group-hover:text-accent-deep"
+            >
+              →
+            </span>
+          </Link>
+
+          <Link
+            href="/screener"
+            className="group flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface px-5 py-4 shadow-[0_1px_2px_rgba(28,39,51,0.04)] transition-colors duration-150 hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            <span>
+              <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-deep">
+                New
+              </span>
+              <span className="block font-display text-lg">O-1A / EB-1A Visa Screener</span>
+              <span className="block text-xs text-ink-soft">
+                Structured intake, evidence review, and criterion-by-criterion assessment — every
+                verdict cited, nothing guessed.
+              </span>
+            </span>
+            <span
+              aria-hidden
+              className="text-lg text-ink-faint transition-transform duration-150 group-hover:translate-x-1 group-hover:text-accent-deep"
+            >
+              →
+            </span>
+          </Link>
+        </div>
       </main>
 
       <footer className="border-t border-line bg-surface/60">
