@@ -65,6 +65,13 @@ class Settings(BaseSettings):
     autofill_checkpoint_path: str = "uploads/autofill/checkpoints.db"
     preflight_checkpoint_path: str = "uploads/preflight/checkpoints.db"
 
+    # Workflow scheduler — the in-process executor cap. Per-firm ceiling on
+    # concurrently executing runs (desktop model: one machine runs everything;
+    # this bounds how many graphs a single firm can drive at once). A
+    # worker-process / Redis executor replaces the seam later without touching
+    # this knob's meaning.
+    max_concurrent_runs_per_firm: int = 2
+
     # Screener (O-1A / EB-1A eligibility decision support)
     screener_checkpoint_path: str = "uploads/screener/checkpoints.db"
     screener_max_evidence_docs: int = 8

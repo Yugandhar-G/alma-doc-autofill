@@ -58,6 +58,7 @@ def create_app(registry: tuple | None = None) -> FastAPI:
     """Build the app over the installed package registry. Packages mount
     their routers under /api/packages/{package_id}; legacy endpoints
     (/api/extract, /api/populate, /api/screener/*) stay until Phase C1."""
+    from app.api import router as matter_router
     from app.registry import INSTALLED_PACKAGES
     from app.screener.api import router as screener_router
 
@@ -67,6 +68,7 @@ def create_app(registry: tuple | None = None) -> FastAPI:
     app = FastAPI(title="yunaki-doc-autofill", lifespan=_lifespan)
     install_auth(app)  # AuthError → 401 in the ApiResponse envelope
     app.include_router(screener_router)  # legacy screener session API
+    app.include_router(matter_router)  # matter API (matters/documents/runs/inbox)
     for package in packages:
         if package.router_factory is not None:
             app.include_router(
