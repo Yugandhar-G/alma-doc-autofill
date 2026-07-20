@@ -1,0 +1,1958 @@
+{
+  "version": "1.0.0",
+  "researched_on": "2026-07-19",
+  "visas": [
+    {
+      "visa_code": "H-1B",
+      "category": "nonimmigrant_employment",
+      "description": "Specialty occupation workers with at least a bachelor's degree in a directly related specialty; employer-sponsored, LCA-backed.",
+      "forms": [
+        {
+          "form_id": "I-129",
+          "title": "Petition for a Nonimmigrant Worker",
+          "role": "primary_petition",
+          "edition_date": "02/27/26",
+          "form_page_url": "https://www.uscis.gov/i-129",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-129.pdf",
+          "issuing_agency": "USCIS",
+          "notes": null
+        },
+        {
+          "form_id": "I-129-SUP-H",
+          "title": "H Classification Supplement to Form I-129",
+          "role": "supplement",
+          "edition_date": "02/27/26",
+          "form_page_url": "https://www.uscis.gov/i-129",
+          "pdf_url": null,
+          "issuing_agency": "USCIS",
+          "notes": "Contained within the single Form I-129 PDF (begins page 13); not a separate download."
+        },
+        {
+          "form_id": "I-129-SUP-H1B-DATA",
+          "title": "H-1B and H-1B1 Data Collection and Filing Fee Exemption Supplement",
+          "role": "supplement",
+          "edition_date": "02/27/26",
+          "form_page_url": "https://www.uscis.gov/i-129",
+          "pdf_url": null,
+          "issuing_agency": "USCIS",
+          "notes": "Contained within the single Form I-129 PDF (begins page 21); not a separate download."
+        },
+        {
+          "form_id": "ETA-9035",
+          "title": "Labor Condition Application for Nonimmigrant Workers (ETA-9035/9035E)",
+          "role": "prerequisite",
+          "edition_date": null,
+          "form_page_url": "https://flag.dol.gov/programs/lca",
+          "pdf_url": null,
+          "issuing_agency": "DOL",
+          "notes": "Online filing only via DOL FLAG; must be DOL-certified before I-129 filing; applies to H-1B, H-1B1, E-3."
+        },
+        {
+          "form_id": "I-907",
+          "title": "Request for Premium Processing Service",
+          "role": "optional",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-907",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-907.pdf",
+          "issuing_agency": "USCIS",
+          "notes": null
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "09/17/18 edition remains accepted; USCIS states a new edition is coming."
+        },
+        {
+          "form_id": "I-539",
+          "title": "Application to Extend/Change Nonimmigrant Status",
+          "role": "optional",
+          "edition_date": "08/28/24",
+          "form_page_url": "https://www.uscis.gov/i-539",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-539.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "For H-4 dependents extending or changing status in the US; I-539A supplement at https://www.uscis.gov/sites/default/files/document/forms/i-539a.pdf."
+        },
+        {
+          "form_id": "DS-160",
+          "title": "Online Nonimmigrant Visa Application",
+          "role": "beneficiary",
+          "edition_date": null,
+          "form_page_url": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/forms/ds-160-online-nonimmigrant-visa-application.html",
+          "pdf_url": null,
+          "issuing_agency": "DOS",
+          "notes": "Online filing only via CEAC, for consular visa issuance. travel.state.gov returned 403 to automated fetch; verified via official-domain search results."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "DOL-certified LCA (ETA-9035/9035E) evidence filed with I-129",
+          "required": true,
+          "notes": "USCIS requires evidence the LCA has been certified by DOL",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/h-1b-specialty-occupations"
+        },
+        {
+          "name": "Evidence the position is a specialty occupation and beneficiary holds the required degree or equivalent",
+          "required": true,
+          "notes": "Bachelor's or higher in a directly related specific specialty, or equivalent",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/h-1b-specialty-occupations"
+        },
+        {
+          "name": "H-1B electronic registration selection notice",
+          "required": true,
+          "notes": "Cap-subject petitions only",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/h-1b-specialty-occupations"
+        },
+        {
+          "name": "Employer support letter describing the position, duties, and terms of employment",
+          "required": true,
+          "notes": "Standard petition evidence",
+          "source_url": null
+        }
+      ]
+    },
+    {
+      "visa_code": "L-1A",
+      "category": "nonimmigrant_employment",
+      "description": "Intracompany transferee entering to serve in an executive or managerial capacity for a qualifying organization.",
+      "forms": [
+        {
+          "form_id": "I-129",
+          "title": "Petition for a Nonimmigrant Worker",
+          "role": "primary_petition",
+          "edition_date": "02/27/26",
+          "form_page_url": "https://www.uscis.gov/i-129",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-129.pdf",
+          "issuing_agency": "USCIS",
+          "notes": null
+        },
+        {
+          "form_id": "I-129-SUP-L",
+          "title": "L Classification Supplement to Form I-129",
+          "role": "supplement",
+          "edition_date": "02/27/26",
+          "form_page_url": "https://www.uscis.gov/i-129",
+          "pdf_url": null,
+          "issuing_agency": "USCIS",
+          "notes": "Contained within the single Form I-129 PDF (begins page 24); not a separate download."
+        },
+        {
+          "form_id": "I-129S",
+          "title": "Nonimmigrant Petition Based on Blanket L Petition",
+          "role": "optional",
+          "edition_date": "01/20/25",
+          "form_page_url": "https://www.uscis.gov/i-129s",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-129s.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Used instead of an individual I-129 L petition under an approved blanket L petition."
+        },
+        {
+          "form_id": "I-907",
+          "title": "Request for Premium Processing Service",
+          "role": "optional",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-907",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-907.pdf",
+          "issuing_agency": "USCIS",
+          "notes": null
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "09/17/18 edition remains accepted; USCIS states a new edition is coming."
+        },
+        {
+          "form_id": "I-539",
+          "title": "Application to Extend/Change Nonimmigrant Status",
+          "role": "optional",
+          "edition_date": "08/28/24",
+          "form_page_url": "https://www.uscis.gov/i-539",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-539.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "For L-2 dependents extending or changing status in the US; I-539A supplement at https://www.uscis.gov/sites/default/files/document/forms/i-539a.pdf."
+        },
+        {
+          "form_id": "DS-160",
+          "title": "Online Nonimmigrant Visa Application",
+          "role": "beneficiary",
+          "edition_date": null,
+          "form_page_url": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/forms/ds-160-online-nonimmigrant-visa-application.html",
+          "pdf_url": null,
+          "issuing_agency": "DOS",
+          "notes": "Online filing only via CEAC, for consular visa issuance. travel.state.gov returned 403 to automated fetch; verified via official-domain search results."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Evidence of qualifying relationship between US and foreign entity (parent, branch, subsidiary, or affiliate)",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/l-1a-intracompany-transferee-executive-or-manager"
+        },
+        {
+          "name": "Evidence of one continuous year of qualifying employment abroad within the preceding three years",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/l-1a-intracompany-transferee-executive-or-manager"
+        },
+        {
+          "name": "Evidence the US role is executive or managerial capacity",
+          "required": true,
+          "notes": "Per INA 101(a)(44) definitions",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/l-1a-intracompany-transferee-executive-or-manager"
+        },
+        {
+          "name": "New office evidence (secured physical premises, financial ability to support the position within one year)",
+          "required": false,
+          "notes": "New-office petitions only",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/l-1a-intracompany-transferee-executive-or-manager"
+        }
+      ]
+    },
+    {
+      "visa_code": "L-1B",
+      "category": "nonimmigrant_employment",
+      "description": "Intracompany transferee entering to provide services in a specialized knowledge capacity for a qualifying organization.",
+      "forms": [
+        {
+          "form_id": "I-129",
+          "title": "Petition for a Nonimmigrant Worker",
+          "role": "primary_petition",
+          "edition_date": "02/27/26",
+          "form_page_url": "https://www.uscis.gov/i-129",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-129.pdf",
+          "issuing_agency": "USCIS",
+          "notes": null
+        },
+        {
+          "form_id": "I-129-SUP-L",
+          "title": "L Classification Supplement to Form I-129",
+          "role": "supplement",
+          "edition_date": "02/27/26",
+          "form_page_url": "https://www.uscis.gov/i-129",
+          "pdf_url": null,
+          "issuing_agency": "USCIS",
+          "notes": "Contained within the single Form I-129 PDF (begins page 24); not a separate download."
+        },
+        {
+          "form_id": "I-129S",
+          "title": "Nonimmigrant Petition Based on Blanket L Petition",
+          "role": "optional",
+          "edition_date": "01/20/25",
+          "form_page_url": "https://www.uscis.gov/i-129s",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-129s.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Used under an approved blanket L petition."
+        },
+        {
+          "form_id": "I-907",
+          "title": "Request for Premium Processing Service",
+          "role": "optional",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-907",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-907.pdf",
+          "issuing_agency": "USCIS",
+          "notes": null
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "09/17/18 edition remains accepted; USCIS states a new edition is coming."
+        },
+        {
+          "form_id": "I-539",
+          "title": "Application to Extend/Change Nonimmigrant Status",
+          "role": "optional",
+          "edition_date": "08/28/24",
+          "form_page_url": "https://www.uscis.gov/i-539",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-539.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "For L-2 dependents extending or changing status in the US; I-539A supplement at https://www.uscis.gov/sites/default/files/document/forms/i-539a.pdf."
+        },
+        {
+          "form_id": "DS-160",
+          "title": "Online Nonimmigrant Visa Application",
+          "role": "beneficiary",
+          "edition_date": null,
+          "form_page_url": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/forms/ds-160-online-nonimmigrant-visa-application.html",
+          "pdf_url": null,
+          "issuing_agency": "DOS",
+          "notes": "Online filing only via CEAC, for consular visa issuance. travel.state.gov returned 403 to automated fetch; verified via official-domain search results."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Evidence of qualifying relationship between US and foreign entity",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/l-1b-intracompany-transferee-specialized-knowledge"
+        },
+        {
+          "name": "Evidence of one continuous year of qualifying employment abroad within the preceding three years",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/l-1b-intracompany-transferee-specialized-knowledge"
+        },
+        {
+          "name": "Evidence the beneficiary has specialized knowledge and the US role requires it",
+          "required": true,
+          "notes": "Special knowledge of company product/processes or advanced knowledge of company procedures",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/l-1b-intracompany-transferee-specialized-knowledge"
+        },
+        {
+          "name": "New office evidence (premises, financial ability)",
+          "required": false,
+          "notes": "New-office petitions only",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/l-1b-intracompany-transferee-specialized-knowledge"
+        }
+      ]
+    },
+    {
+      "visa_code": "O-1A",
+      "category": "nonimmigrant_employment",
+      "description": "Individuals with extraordinary ability in sciences, education, business, or athletics, demonstrated by sustained national or international acclaim.",
+      "forms": [
+        {
+          "form_id": "I-129",
+          "title": "Petition for a Nonimmigrant Worker",
+          "role": "primary_petition",
+          "edition_date": "02/27/26",
+          "form_page_url": "https://www.uscis.gov/i-129",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-129.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Filed by a US employer or agent."
+        },
+        {
+          "form_id": "I-129-SUP-OP",
+          "title": "O and P Classifications Supplement to Form I-129",
+          "role": "supplement",
+          "edition_date": "02/27/26",
+          "form_page_url": "https://www.uscis.gov/i-129",
+          "pdf_url": null,
+          "issuing_agency": "USCIS",
+          "notes": "Contained within the single Form I-129 PDF (begins page 28); not a separate download."
+        },
+        {
+          "form_id": "I-907",
+          "title": "Request for Premium Processing Service",
+          "role": "optional",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-907",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-907.pdf",
+          "issuing_agency": "USCIS",
+          "notes": null
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "09/17/18 edition remains accepted; USCIS states a new edition is coming."
+        },
+        {
+          "form_id": "I-539",
+          "title": "Application to Extend/Change Nonimmigrant Status",
+          "role": "optional",
+          "edition_date": "08/28/24",
+          "form_page_url": "https://www.uscis.gov/i-539",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-539.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "For O-3 dependents extending or changing status in the US; I-539A supplement at https://www.uscis.gov/sites/default/files/document/forms/i-539a.pdf."
+        },
+        {
+          "form_id": "DS-160",
+          "title": "Online Nonimmigrant Visa Application",
+          "role": "beneficiary",
+          "edition_date": null,
+          "form_page_url": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/forms/ds-160-online-nonimmigrant-visa-application.html",
+          "pdf_url": null,
+          "issuing_agency": "DOS",
+          "notes": "Online filing only via CEAC, for consular visa issuance. travel.state.gov returned 403 to automated fetch; verified via official-domain search results."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Consultation: written advisory opinion from a peer group (including labor organizations) or expert in the beneficiary's field",
+          "required": true,
+          "notes": "May be waived only if no appropriate peer group exists",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/o-1-visa-individuals-with-extraordinary-ability-or-achievement"
+        },
+        {
+          "name": "Copy of written contract between petitioner and beneficiary, or summary of the oral agreement terms",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/o-1-visa-individuals-with-extraordinary-ability-or-achievement"
+        },
+        {
+          "name": "Itinerary: nature of events/activities with beginning and end dates for the validity period requested",
+          "required": true,
+          "notes": "Required where applicable, e.g. agent-filed or multi-venue engagements",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/o-1-visa-individuals-with-extraordinary-ability-or-achievement"
+        },
+        {
+          "name": "Evidence of extraordinary ability (major award or at least 3 of the O-1A regulatory criteria)",
+          "required": true,
+          "notes": "Awards, memberships, published material, judging, original contributions, scholarly articles, critical employment, high salary",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/o-1-visa-individuals-with-extraordinary-ability-or-achievement"
+        },
+        {
+          "name": "Agent documentation (if filed by a US agent)",
+          "required": false,
+          "notes": "Evidence of authority to act as agent",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/o-1-visa-individuals-with-extraordinary-ability-or-achievement"
+        }
+      ]
+    },
+    {
+      "visa_code": "O-1B",
+      "category": "nonimmigrant_employment",
+      "description": "Individuals with extraordinary ability in the arts or extraordinary achievement in the motion picture or television industry.",
+      "forms": [
+        {
+          "form_id": "I-129",
+          "title": "Petition for a Nonimmigrant Worker",
+          "role": "primary_petition",
+          "edition_date": "02/27/26",
+          "form_page_url": "https://www.uscis.gov/i-129",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-129.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Filed by a US employer or agent."
+        },
+        {
+          "form_id": "I-129-SUP-OP",
+          "title": "O and P Classifications Supplement to Form I-129",
+          "role": "supplement",
+          "edition_date": "02/27/26",
+          "form_page_url": "https://www.uscis.gov/i-129",
+          "pdf_url": null,
+          "issuing_agency": "USCIS",
+          "notes": "Contained within the single Form I-129 PDF (begins page 28); not a separate download."
+        },
+        {
+          "form_id": "I-907",
+          "title": "Request for Premium Processing Service",
+          "role": "optional",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-907",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-907.pdf",
+          "issuing_agency": "USCIS",
+          "notes": null
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "09/17/18 edition remains accepted; USCIS states a new edition is coming."
+        },
+        {
+          "form_id": "I-539",
+          "title": "Application to Extend/Change Nonimmigrant Status",
+          "role": "optional",
+          "edition_date": "08/28/24",
+          "form_page_url": "https://www.uscis.gov/i-539",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-539.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "For O-3 dependents extending or changing status in the US; I-539A supplement at https://www.uscis.gov/sites/default/files/document/forms/i-539a.pdf."
+        },
+        {
+          "form_id": "DS-160",
+          "title": "Online Nonimmigrant Visa Application",
+          "role": "beneficiary",
+          "edition_date": null,
+          "form_page_url": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/forms/ds-160-online-nonimmigrant-visa-application.html",
+          "pdf_url": null,
+          "issuing_agency": "DOS",
+          "notes": "Online filing only via CEAC, for consular visa issuance. travel.state.gov returned 403 to automated fetch; verified via official-domain search results."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Consultation: advisory opinion from peer group or labor organization; for motion picture/TV, from both the labor union and a management organization",
+          "required": true,
+          "notes": "Dual consultation is specific to motion picture/TV",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/o-1-visa-individuals-with-extraordinary-ability-or-achievement"
+        },
+        {
+          "name": "Copy of written contract between petitioner and beneficiary, or summary of the oral agreement terms",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/o-1-visa-individuals-with-extraordinary-ability-or-achievement"
+        },
+        {
+          "name": "Itinerary of events/activities with dates",
+          "required": true,
+          "notes": "Required where applicable",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/o-1-visa-individuals-with-extraordinary-ability-or-achievement"
+        },
+        {
+          "name": "Evidence of distinction in the arts or extraordinary achievement in motion picture/TV (significant award/nomination or at least 3 regulatory criteria)",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/o-1-visa-individuals-with-extraordinary-ability-or-achievement"
+        },
+        {
+          "name": "Agent documentation (if filed by a US agent)",
+          "required": false,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/o-1-visa-individuals-with-extraordinary-ability-or-achievement"
+        }
+      ]
+    },
+    {
+      "visa_code": "TN",
+      "category": "nonimmigrant_employment",
+      "description": "USMCA professionals: qualified Canadian and Mexican citizens entering to work in designated professional occupations.",
+      "forms": [
+        {
+          "form_id": "I-129",
+          "title": "Petition for a Nonimmigrant Worker",
+          "role": "primary_petition",
+          "edition_date": "02/27/26",
+          "form_page_url": "https://www.uscis.gov/i-129",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-129.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Only for extension of stay or change of status inside the US (or optional employer pre-filing for Canadians). Canadians typically apply at a CBP port of entry with no I-129; Mexicans apply at a consulate with DS-160."
+        },
+        {
+          "form_id": "I-129-SUP-TRADE",
+          "title": "Trade Agreement Supplement to Form I-129",
+          "role": "supplement",
+          "edition_date": "02/27/26",
+          "form_page_url": "https://www.uscis.gov/i-129",
+          "pdf_url": null,
+          "issuing_agency": "USCIS",
+          "notes": "Contained within the single Form I-129 PDF (begins page 11); not a separate download."
+        },
+        {
+          "form_id": "I-907",
+          "title": "Request for Premium Processing Service",
+          "role": "optional",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-907",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-907.pdf",
+          "issuing_agency": "USCIS",
+          "notes": null
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "09/17/18 edition remains accepted; USCIS states a new edition is coming."
+        },
+        {
+          "form_id": "I-539",
+          "title": "Application to Extend/Change Nonimmigrant Status",
+          "role": "optional",
+          "edition_date": "08/28/24",
+          "form_page_url": "https://www.uscis.gov/i-539",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-539.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "For TD dependents extending or changing status in the US; I-539A supplement at https://www.uscis.gov/sites/default/files/document/forms/i-539a.pdf."
+        },
+        {
+          "form_id": "DS-160",
+          "title": "Online Nonimmigrant Visa Application",
+          "role": "beneficiary",
+          "edition_date": null,
+          "form_page_url": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/forms/ds-160-online-nonimmigrant-visa-application.html",
+          "pdf_url": null,
+          "issuing_agency": "DOS",
+          "notes": "Online only via CEAC. Required for Mexican citizens; Canadians are generally visa-exempt and apply at the port of entry."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Proof of Canadian or Mexican citizenship",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/tn-nafta-professionals"
+        },
+        {
+          "name": "Employer letter detailing professional capacity, purpose of employment, length of stay, and educational qualifications",
+          "required": true,
+          "notes": "Presented at port of entry (Canadians) or consulate (Mexicans)",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/tn-nafta-professionals"
+        },
+        {
+          "name": "Credentials evaluation of foreign degrees",
+          "required": false,
+          "notes": "If applicable",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/tn-nafta-professionals"
+        },
+        {
+          "name": "Evidence the occupation is on the USMCA professional list and the beneficiary meets its qualifications",
+          "required": true,
+          "notes": "Per profession in USMCA Appendix 2",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/tn-nafta-professionals"
+        }
+      ]
+    },
+    {
+      "visa_code": "E-2",
+      "category": "nonimmigrant_employment",
+      "description": "Treaty investors (and qualifying employees) of a treaty country who have invested, or are investing, substantial capital in a US enterprise they direct and develop.",
+      "forms": [
+        {
+          "form_id": "I-129",
+          "title": "Petition for a Nonimmigrant Worker",
+          "role": "primary_petition",
+          "edition_date": "02/27/26",
+          "form_page_url": "https://www.uscis.gov/i-129",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-129.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Only for change of status to E-2 or extension inside the US. Applicants abroad apply directly at a consulate (DS-160 plus DS-156E); no USCIS petition for consular processing."
+        },
+        {
+          "form_id": "I-129-SUP-E",
+          "title": "E-1/E-2 Classification Supplement to Form I-129",
+          "role": "supplement",
+          "edition_date": "02/27/26",
+          "form_page_url": "https://www.uscis.gov/i-129",
+          "pdf_url": null,
+          "issuing_agency": "USCIS",
+          "notes": "Contained within the single Form I-129 PDF (begins page 9); not a separate download."
+        },
+        {
+          "form_id": "I-907",
+          "title": "Request for Premium Processing Service",
+          "role": "optional",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-907",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-907.pdf",
+          "issuing_agency": "USCIS",
+          "notes": null
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "09/17/18 edition remains accepted; USCIS states a new edition is coming."
+        },
+        {
+          "form_id": "I-539",
+          "title": "Application to Extend/Change Nonimmigrant Status",
+          "role": "optional",
+          "edition_date": "08/28/24",
+          "form_page_url": "https://www.uscis.gov/i-539",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-539.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "For E-2 dependent dependents extending or changing status in the US; I-539A supplement at https://www.uscis.gov/sites/default/files/document/forms/i-539a.pdf."
+        },
+        {
+          "form_id": "DS-160",
+          "title": "Online Nonimmigrant Visa Application",
+          "role": "beneficiary",
+          "edition_date": null,
+          "form_page_url": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/forms/ds-160-online-nonimmigrant-visa-application.html",
+          "pdf_url": null,
+          "issuing_agency": "DOS",
+          "notes": "Online only via CEAC; required of all E-2 consular applicants."
+        },
+        {
+          "form_id": "DS-156E",
+          "title": "Nonimmigrant Treaty Trader/Investor Application",
+          "role": "beneficiary",
+          "edition_date": null,
+          "form_page_url": "https://eforms.state.gov/FormInformation.aspx?FormID=239",
+          "pdf_url": null,
+          "issuing_agency": "DOS",
+          "notes": "Completed with DS-160 for E-1/E-2 executives, managers, and essential employees. Direct PDF links on eforms.state.gov returned 404 at verification time, so pdf_url is null; obtain via eforms.state.gov or the consulate."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Proof of treaty-country nationality of the investor (and employer, for employee applicants)",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/e-2-treaty-investors"
+        },
+        {
+          "name": "Evidence of substantial investment of capital in a bona fide US enterprise",
+          "required": true,
+          "notes": "Funds committed and at risk; source and path of funds documentation",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/e-2-treaty-investors"
+        },
+        {
+          "name": "Evidence the investor directs and develops the enterprise (at least 50% ownership or operational control)",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/e-2-treaty-investors"
+        },
+        {
+          "name": "Evidence the enterprise is not marginal (business plan, financial projections, payroll)",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/e-2-treaty-investors"
+        },
+        {
+          "name": "Evidence of intent to depart the US when E-2 status ends",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/e-2-treaty-investors"
+        },
+        {
+          "name": "For E-2 employees: evidence of executive/supervisory role or essential skills, and same treaty nationality as employer",
+          "required": false,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/e-2-treaty-investors"
+        }
+      ]
+    },
+    {
+      "visa_code": "EB-1A",
+      "category": "immigrant_employment",
+      "description": "Employment-based first preference, extraordinary ability in sciences, arts, education, business, or athletics; self-petition allowed (no employer or labor certification needed).",
+      "forms": [
+        {
+          "form_id": "I-140",
+          "title": "Immigrant Petition for Alien Workers",
+          "role": "primary_petition",
+          "edition_date": "06/07/24",
+          "form_page_url": "https://www.uscis.gov/i-140",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-140.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "May be self-petitioned by the beneficiary; no job offer or labor certification required for EB-1A."
+        },
+        {
+          "form_id": "I-907",
+          "title": "Request for Premium Processing Service",
+          "role": "optional",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-907",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-907.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "I-140 is listed as premium-processing eligible on the I-907 page."
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Only if represented by an attorney or accredited representative."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Evidence meeting at least 3 of the 10 extraordinary-ability criteria, or evidence of a one-time achievement (e.g., Pulitzer, Oscar, Olympic Medal)",
+          "required": true,
+          "notes": "Criteria list published on the USCIS EB-1 page.",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-first-preference-eb-1"
+        },
+        {
+          "name": "Evidence the beneficiary will continue working in the area of expertise in the U.S.",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-first-preference-eb-1"
+        },
+        {
+          "name": "Evidence of sustained national or international acclaim",
+          "required": true,
+          "notes": "Overall standard the criteria evidence must demonstrate.",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-first-preference-eb-1"
+        }
+      ]
+    },
+    {
+      "visa_code": "EB-1B",
+      "category": "immigrant_employment",
+      "description": "Employment-based first preference, outstanding professors and researchers with international recognition; requires a U.S. employer job offer but no labor certification.",
+      "forms": [
+        {
+          "form_id": "I-140",
+          "title": "Immigrant Petition for Alien Workers",
+          "role": "primary_petition",
+          "edition_date": "06/07/24",
+          "form_page_url": "https://www.uscis.gov/i-140",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-140.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Filed by the U.S. employer; no labor certification required."
+        },
+        {
+          "form_id": "I-907",
+          "title": "Request for Premium Processing Service",
+          "role": "optional",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-907",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-907.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "I-140 is listed as premium-processing eligible on the I-907 page."
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Only if represented."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Evidence meeting at least 2 of the 6 outstanding-researcher criteria",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-first-preference-eb-1"
+        },
+        {
+          "name": "Evidence of at least 3 years of experience in teaching or research in the academic field",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-first-preference-eb-1"
+        },
+        {
+          "name": "Offer of employment for a tenure/tenure-track teaching or comparable research position",
+          "required": true,
+          "notes": "From a university, institution of higher education, or qualifying private employer.",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-first-preference-eb-1"
+        },
+        {
+          "name": "For private employers: evidence of documented accomplishments and employment of at least 3 full-time researchers",
+          "required": true,
+          "notes": "Applies only when the petitioner is a private employer rather than a university.",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-first-preference-eb-1"
+        },
+        {
+          "name": "Evidence of employer's ability to pay the offered wage",
+          "required": true,
+          "notes": "Standard initial evidence for employer-filed I-140 petitions (annual reports, federal tax returns, or audited financial statements per I-140 instructions).",
+          "source_url": null
+        }
+      ]
+    },
+    {
+      "visa_code": "EB-1C",
+      "category": "immigrant_employment",
+      "description": "Employment-based first preference, certain multinational managers or executives transferring to a qualifying U.S. employer; no labor certification required.",
+      "forms": [
+        {
+          "form_id": "I-140",
+          "title": "Immigrant Petition for Alien Workers",
+          "role": "primary_petition",
+          "edition_date": "06/07/24",
+          "form_page_url": "https://www.uscis.gov/i-140",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-140.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Filed by the U.S. employer, which must have been doing business for at least 1 year."
+        },
+        {
+          "form_id": "I-907",
+          "title": "Request for Premium Processing Service",
+          "role": "optional",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-907",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-907.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "I-140 is listed as premium-processing eligible on the I-907 page."
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Only if represented."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Evidence of at least 1 year of qualifying employment abroad within the 3 years preceding the petition (or most recent lawful nonimmigrant admission)",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-first-preference-eb-1"
+        },
+        {
+          "name": "Evidence of qualifying relationship between the U.S. petitioner and the foreign entity",
+          "required": true,
+          "notes": "Parent/subsidiary/affiliate/branch relationship.",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-first-preference-eb-1"
+        },
+        {
+          "name": "Evidence the U.S. role and the prior foreign role are managerial or executive capacity",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-first-preference-eb-1"
+        },
+        {
+          "name": "Evidence the U.S. petitioner has been doing business for at least 1 year",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-first-preference-eb-1"
+        },
+        {
+          "name": "Evidence of employer's ability to pay the offered wage",
+          "required": true,
+          "notes": "Standard initial evidence for employer-filed I-140 petitions.",
+          "source_url": null
+        }
+      ]
+    },
+    {
+      "visa_code": "EB-2-NIW",
+      "category": "immigrant_employment",
+      "description": "Employment-based second preference with national interest waiver of the job offer and labor certification; self-petition allowed (no employer needed).",
+      "forms": [
+        {
+          "form_id": "I-140",
+          "title": "Immigrant Petition for Alien Workers",
+          "role": "primary_petition",
+          "edition_date": "06/07/24",
+          "form_page_url": "https://www.uscis.gov/i-140",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-140.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "May be self-petitioned; labor certification waived in the national interest."
+        },
+        {
+          "form_id": "ETA-9089",
+          "title": "Application for Permanent Employment Certification",
+          "role": "supplement",
+          "edition_date": null,
+          "form_page_url": "https://flag.dol.gov/programs/perm",
+          "pdf_url": null,
+          "issuing_agency": "DOL",
+          "notes": "For NIW the I-140 must be accompanied by a completed Form ETA-9089 Appendix A and a signed ETA-9089 Final Determination (uncertified, not DOL-approved); the operational form is filed online via DOL FLAG, online filing only."
+        },
+        {
+          "form_id": "I-907",
+          "title": "Request for Premium Processing Service",
+          "role": "optional",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-907",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-907.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "I-140 is listed as premium-processing eligible on the I-907 page."
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Only if represented."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Evidence of advanced degree or exceptional ability (EB-2 underlying qualification)",
+          "required": true,
+          "notes": "Degree records/transcripts, or evidence meeting the exceptional-ability criteria.",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-second-preference-eb-2"
+        },
+        {
+          "name": "Evidence addressing the 3 national-interest factors (substantial merit and national importance; well positioned to advance the endeavor; beneficial to waive the job offer requirement)",
+          "required": true,
+          "notes": "USCIS considers these 3 factors; qualifying endeavors are not defined by statute.",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-second-preference-eb-2"
+        },
+        {
+          "name": "Completed ETA-9089 Appendix A and signed ETA-9089 Final Determination",
+          "required": true,
+          "notes": "Included in the I-140 package in lieu of a DOL-certified labor certification.",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-second-preference-eb-2"
+        }
+      ]
+    },
+    {
+      "visa_code": "EB-2",
+      "category": "immigrant_employment",
+      "description": "Employment-based second preference for advanced-degree professionals or persons of exceptional ability, employer-sponsored with DOL PERM labor certification.",
+      "forms": [
+        {
+          "form_id": "ETA-9089",
+          "title": "Application for Permanent Employment Certification",
+          "role": "prerequisite",
+          "edition_date": null,
+          "form_page_url": "https://flag.dol.gov/programs/perm",
+          "pdf_url": null,
+          "issuing_agency": "DOL",
+          "notes": "Online filing only via DOL FLAG (for applications filed on or after June 1, 2023); requires a prevailing wage determination (ETA-9141) from the NPWC and pre-filing recruitment before submission; the approved and signed Final Determination accompanies the I-140."
+        },
+        {
+          "form_id": "I-140",
+          "title": "Immigrant Petition for Alien Workers",
+          "role": "primary_petition",
+          "edition_date": "06/07/24",
+          "form_page_url": "https://www.uscis.gov/i-140",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-140.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Filed by the U.S. employer after PERM approval."
+        },
+        {
+          "form_id": "I-907",
+          "title": "Request for Premium Processing Service",
+          "role": "optional",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-907",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-907.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "I-140 is listed as premium-processing eligible on the I-907 page."
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Only if represented."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Approved and signed ETA-9089 Final Determination (labor certification)",
+          "required": true,
+          "notes": "For FLAG-era filings, the Final Determination - Permanent Employment Certification Approval.",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-second-preference-eb-2"
+        },
+        {
+          "name": "Evidence of advanced degree (degree plus transcripts) or evidence meeting the exceptional-ability criteria",
+          "required": true,
+          "notes": "Must also meet any education/experience requirements stated on the labor certification.",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-second-preference-eb-2"
+        },
+        {
+          "name": "Evidence of employer's ability to pay the offered wage",
+          "required": true,
+          "notes": "Annual reports, federal tax returns, or audited financial statements per I-140 instructions.",
+          "source_url": null
+        }
+      ]
+    },
+    {
+      "visa_code": "EB-3",
+      "category": "immigrant_employment",
+      "description": "Employment-based third preference for skilled workers, professionals, and other workers, employer-sponsored with DOL PERM labor certification.",
+      "forms": [
+        {
+          "form_id": "ETA-9089",
+          "title": "Application for Permanent Employment Certification",
+          "role": "prerequisite",
+          "edition_date": null,
+          "form_page_url": "https://flag.dol.gov/programs/perm",
+          "pdf_url": null,
+          "issuing_agency": "DOL",
+          "notes": "Online filing only via DOL FLAG (for applications filed on or after June 1, 2023); requires a prevailing wage determination (ETA-9141) from the NPWC and pre-filing recruitment before submission."
+        },
+        {
+          "form_id": "I-140",
+          "title": "Immigrant Petition for Alien Workers",
+          "role": "primary_petition",
+          "edition_date": "06/07/24",
+          "form_page_url": "https://www.uscis.gov/i-140",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-140.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Filed by the U.S. employer after PERM approval."
+        },
+        {
+          "form_id": "I-907",
+          "title": "Request for Premium Processing Service",
+          "role": "optional",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-907",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-907.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "I-140 is listed as premium-processing eligible on the I-907 page."
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Only if represented."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Signed Form ETA-9089 approved by DOL (or, for FLAG filings on/after June 1, 2023, the approved and signed Final Determination - Permanent Employment Certification Approval)",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-third-preference-eb-3"
+        },
+        {
+          "name": "Evidence of education, training, or experience matching the subcategory (skilled worker: 2+ years training/experience; professional: U.S. baccalaureate or foreign equivalent; other worker: capable of unskilled labor) and the job requirements on the labor certification",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-third-preference-eb-3"
+        },
+        {
+          "name": "Evidence of employer's ability to pay the offered wage",
+          "required": true,
+          "notes": "Annual reports, federal tax returns, or audited financial statements per I-140 instructions.",
+          "source_url": null
+        }
+      ]
+    },
+    {
+      "visa_code": "EB-5",
+      "category": "immigrant_employment",
+      "description": "Employment-based fifth preference immigrant investor program: investment in a U.S. commercial enterprise creating or preserving 10 permanent full-time jobs for qualified U.S. workers.",
+      "forms": [
+        {
+          "form_id": "I-526",
+          "title": "Immigrant Petition by Standalone Investor",
+          "role": "primary_petition",
+          "edition_date": "01/20/25",
+          "form_page_url": "https://www.uscis.gov/i-526",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-526.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "For standalone (direct) investors not investing through a regional center."
+        },
+        {
+          "form_id": "I-526E",
+          "title": "Immigrant Petition by Regional Center Investor",
+          "role": "primary_petition",
+          "edition_date": "01/20/25",
+          "form_page_url": "https://www.uscis.gov/i-526e",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-526e.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "For investors pooling investment through a USCIS-designated regional center; file I-526E or I-526, not both."
+        },
+        {
+          "form_id": "I-829",
+          "title": "Petition by Investor to Remove Conditions on Permanent Resident Status",
+          "role": "primary_petition",
+          "edition_date": "01/20/25",
+          "form_page_url": "https://www.uscis.gov/i-829",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-829.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Second-stage petition to remove conditions on the 2-year conditional green card."
+        },
+        {
+          "form_id": "I-907",
+          "title": "Request for Premium Processing Service",
+          "role": "optional",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-907",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-907.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "NOT available for EB-5: the I-907 page lists only I-129, I-140, certain I-765 categories, and certain I-539 classifications as eligible; I-526, I-526E, and I-829 are not premium-processing eligible."
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Only if represented."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Evidence of the required capital investment in a U.S. commercial enterprise",
+          "required": true,
+          "notes": "Investment threshold depends on whether the project is in a targeted employment area; amounts set by the EB-5 Reform and Integrity Act of 2022.",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/eb-5-immigrant-investor-program"
+        },
+        {
+          "name": "Evidence of a plan to create or preserve 10 permanent full-time jobs for qualified U.S. workers",
+          "required": true,
+          "notes": "Business plan and job-creation evidence; for I-829, evidence the jobs were created/preserved.",
+          "source_url": "https://www.uscis.gov/working-in-the-united-states/permanent-workers/eb-5-immigrant-investor-program"
+        },
+        {
+          "name": "Evidence of lawful source and path of invested funds",
+          "required": true,
+          "notes": "Per I-526/I-526E instructions (tax returns, bank records, transaction documentation); not itemized on the pages fetched.",
+          "source_url": null
+        },
+        {
+          "name": "For I-526E: evidence of investment through a USCIS-designated regional center and the regional center's project documents",
+          "required": true,
+          "notes": "Applies to regional center investors only.",
+          "source_url": "https://www.uscis.gov/i-526e"
+        }
+      ]
+    },
+    {
+      "visa_code": "IR-CR-SPOUSE",
+      "category": "family",
+      "description": "Immediate-relative / spouse immigrant petition filed by a U.S. citizen or LPR petitioner (I-130 based); classification step preceding AOS or consular processing.",
+      "forms": [
+        {
+          "form_id": "I-130",
+          "title": "Petition for Alien Relative",
+          "role": "primary_petition",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-130",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-130.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Instructions PDF at https://www.uscis.gov/sites/default/files/document/forms/i-130instr.pdf."
+        },
+        {
+          "form_id": "I-130A",
+          "title": "Supplemental Information for a Spouse Beneficiary",
+          "role": "supplement",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-130",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-130a.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Required whenever the beneficiary is a spouse; linked from the I-130 page. No standalone form page."
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Only if represented; 09/17/18 and 05/23/18 editions currently accepted, new edition forthcoming per the page."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Evidence of petitioner's U.S. citizenship, LPR status, or U.S. national status (birth certificate, naturalization/citizenship certificate, FS-240 CRBA, unexpired U.S. passport, or front/back copy of Green Card)",
+          "required": true,
+          "notes": "One of the listed items",
+          "source_url": "https://www.uscis.gov/i-130"
+        },
+        {
+          "name": "Marriage certificate (copy)",
+          "required": true,
+          "notes": "For spouse petitions; other relatives use birth certificates establishing the relationship",
+          "source_url": "https://www.uscis.gov/i-130"
+        },
+        {
+          "name": "Evidence of termination of any prior marriages (divorce decree, annulment, death certificate)",
+          "required": false,
+          "notes": "Required if applicable",
+          "source_url": "https://www.uscis.gov/i-130"
+        },
+        {
+          "name": "Evidence of bona fides of the marriage (joint property, joint lease, combined finances, birth certificates of shared children, third-party affidavits)",
+          "required": true,
+          "notes": "For spouse petitions",
+          "source_url": "https://www.uscis.gov/i-130"
+        },
+        {
+          "name": "Proof of legal name change",
+          "required": false,
+          "notes": "If applicable",
+          "source_url": "https://www.uscis.gov/i-130"
+        },
+        {
+          "name": "Two passport-style photographs",
+          "required": false,
+          "notes": "If applicable per checklist",
+          "source_url": "https://www.uscis.gov/i-130"
+        },
+        {
+          "name": "Certified English translations of any foreign-language documents",
+          "required": true,
+          "notes": "Translator certification of completeness, accuracy, and competence",
+          "source_url": "https://www.uscis.gov/i-130"
+        }
+      ]
+    },
+    {
+      "visa_code": "K-1",
+      "category": "family",
+      "description": "Fiancé(e) of a U.S. citizen (I-129F based); K-1 nonimmigrant visa issued abroad, marriage required within 90 days of admission, then AOS.",
+      "forms": [
+        {
+          "form_id": "I-129F",
+          "title": "Petition for Alien Fiancé(e)",
+          "role": "primary_petition",
+          "edition_date": "01/20/25",
+          "form_page_url": "https://www.uscis.gov/i-129f",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-129f.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Also used for K-3 spouse classification."
+        },
+        {
+          "form_id": "DS-160",
+          "title": "Online Nonimmigrant Visa Application",
+          "role": "companion",
+          "edition_date": null,
+          "form_page_url": "https://ceac.state.gov/genniv/",
+          "pdf_url": null,
+          "issuing_agency": "DOS",
+          "notes": "K visas are nonimmigrant visas; the beneficiary files DS-160 online via CEAC at the consular stage. Online only, no PDF. travel.state.gov returned HTTP 403 to automated fetch."
+        },
+        {
+          "form_id": "I-134",
+          "title": "Declaration of Financial Support",
+          "role": "optional",
+          "edition_date": "01/20/25",
+          "form_page_url": "https://www.uscis.gov/i-134",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-134.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Commonly requested by consular officers at the K-1 interview; not the I-864 (that comes later at AOS)."
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Only if represented; 09/17/18 and 05/23/18 editions currently accepted, new edition forthcoming per the page."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Evidence of petitioner's U.S. citizenship (birth certificate, naturalization/citizenship certificate, FS-240 CRBA, unexpired U.S. passport, or consular officer statement)",
+          "required": true,
+          "notes": "K-1 petitioner must be a U.S. citizen",
+          "source_url": "https://www.uscis.gov/i-129f"
+        },
+        {
+          "name": "Evidence of legal termination of any previous marriages (final divorce decree, annulment order, or death certificate)",
+          "required": false,
+          "notes": "Required if applicable, for either party",
+          "source_url": "https://www.uscis.gov/i-129f"
+        },
+        {
+          "name": "One color passport-style photograph of petitioner and one of fiancé(e), taken within 30 days of filing",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/i-129f"
+        },
+        {
+          "name": "Evidence of bona fide intention to marry and intent to marry within 90 days of K-1 admission",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/i-129f"
+        },
+        {
+          "name": "Evidence of in-person meeting within 2 years of filing",
+          "required": true,
+          "notes": "Or evidence qualifying for the cultural-custom or extreme-hardship exemption",
+          "source_url": "https://www.uscis.gov/i-129f"
+        },
+        {
+          "name": "Evidence supporting an IMBRA waiver",
+          "required": false,
+          "notes": "If applicable",
+          "source_url": "https://www.uscis.gov/i-129f"
+        },
+        {
+          "name": "Evidence of legal name change",
+          "required": false,
+          "notes": "If applicable",
+          "source_url": "https://www.uscis.gov/i-129f"
+        },
+        {
+          "name": "Certified English translations of any foreign-language documents",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/i-129f"
+        }
+      ]
+    },
+    {
+      "visa_code": "AOS-PACKAGE",
+      "category": "adjustment",
+      "description": "Concurrent adjustment-of-status package filed inside the U.S.: I-485 plus affidavit of support, medical exam, and optional EAD/advance-parole companions.",
+      "forms": [
+        {
+          "form_id": "I-485",
+          "title": "Application to Register Permanent Residence or Adjust Status",
+          "role": "primary_petition",
+          "edition_date": "01/20/25",
+          "form_page_url": "https://www.uscis.gov/i-485",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-485.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "I-693 (or partial I-693) must be submitted with the I-485 or the package may be rejected. Supplement A applies for INA 245(i) cases. Current editions include the INA 213A exemption request formerly made on I-864W."
+        },
+        {
+          "form_id": "I-864",
+          "title": "Affidavit of Support Under Section 213A of the INA",
+          "role": "companion",
+          "edition_date": "10/17/24",
+          "form_page_url": "https://www.uscis.gov/i-864",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-864.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Required for family-based cases. I-864EZ is an alternative for qualifying single-sponsor W-2 cases."
+        },
+        {
+          "form_id": "I-864A",
+          "title": "Contract Between Sponsor and Household Member",
+          "role": "supplement",
+          "edition_date": "10/17/24",
+          "form_page_url": "https://www.uscis.gov/i-864a",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/I-864a.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "One per household member whose income is used to qualify. PDF filename is capitalized 'I-864a.pdf' as linked on the page."
+        },
+        {
+          "form_id": "I-864EZ",
+          "title": "Affidavit of Support Under Section 213A of the INA (EZ)",
+          "role": "supplement",
+          "edition_date": "10/17/24",
+          "form_page_url": "https://www.uscis.gov/i-864ez",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-864ez.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Simplified variant when the petitioning sponsor is the only sponsor, sponsors one immigrant, and qualifies on W-2 salary/pension income alone."
+        },
+        {
+          "form_id": "I-864W",
+          "title": "Request for Exemption for Intending Immigrant's Affidavit of Support",
+          "role": "supplement",
+          "edition_date": "12/08/21",
+          "form_page_url": "https://www.uscis.gov/i-864w",
+          "pdf_url": null,
+          "issuing_agency": "USCIS",
+          "notes": "Page is live and lists a 12/08/21 edition, but no form PDF is linked on the page at fetch time, so pdf_url is unverifiable. Current I-485 editions capture the 213A exemption request directly."
+        },
+        {
+          "form_id": "I-693",
+          "title": "Report of Immigration Medical Examination and Vaccination Record",
+          "role": "companion",
+          "edition_date": "01/20/25",
+          "form_page_url": "https://www.uscis.gov/i-693",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-693.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Completed by a USCIS-designated civil surgeon; delivered in a sealed envelope; must be filed with the I-485. Civil-surgeon signatures on/after July 3, 2025 require the 01/20/25 edition."
+        },
+        {
+          "form_id": "I-765",
+          "title": "Application for Employment Authorization",
+          "role": "companion",
+          "edition_date": "08/21/25",
+          "form_page_url": "https://www.uscis.gov/i-765",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-765.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Optional interim EAD under (c)(9) while the I-485 is pending; may be filed concurrently."
+        },
+        {
+          "form_id": "I-131",
+          "title": "Application for Travel Documents, Parole Documents, and Arrival/Departure Records",
+          "role": "companion",
+          "edition_date": "01/20/25",
+          "form_page_url": "https://www.uscis.gov/i-131",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-131.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Optional advance parole so the applicant can travel without abandoning the pending I-485."
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Only if represented; 09/17/18 and 05/23/18 editions currently accepted, new edition forthcoming per the page."
+        },
+        {
+          "form_id": "I-944",
+          "title": "Declaration of Self-Sufficiency",
+          "role": "optional",
+          "edition_date": null,
+          "form_page_url": "https://www.uscis.gov/i-944",
+          "pdf_url": null,
+          "issuing_agency": "USCIS",
+          "notes": "DISCONTINUED. Do not file: beginning March 9, 2021, applicants should not file Form I-944 or its evidence with Form I-485 (2019 public charge rule vacated). Recorded only to prevent inclusion."
+        },
+        {
+          "form_id": "G-1145",
+          "title": "E-Notification of Application/Petition Acceptance",
+          "role": "optional",
+          "edition_date": null,
+          "form_page_url": "https://www.uscis.gov/g-1145",
+          "pdf_url": null,
+          "issuing_agency": "USCIS",
+          "notes": "Referenced on the I-485 page (clip to first page for lockbox e-notification). Edition/pdf verified separately on the COMMON profile."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Two passport-style photographs",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/forms/filing-guidance/checklist-of-required-initial-evidence-for-form-i-485-for-informational-purposes-only"
+        },
+        {
+          "name": "Copy of government-issued identity document with photograph",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/forms/filing-guidance/checklist-of-required-initial-evidence-for-form-i-485-for-informational-purposes-only"
+        },
+        {
+          "name": "Copy of applicant's birth certificate",
+          "required": true,
+          "notes": "If unavailable/nonexistent, other acceptable evidence of birth plus proof of unavailability",
+          "source_url": "https://www.uscis.gov/forms/filing-guidance/checklist-of-required-initial-evidence-for-form-i-485-for-informational-purposes-only"
+        },
+        {
+          "name": "Inspection and admission, or inspection and parole documentation (e.g., I-94)",
+          "required": true,
+          "notes": "Unless adjusting under INA 245(i)",
+          "source_url": "https://www.uscis.gov/forms/filing-guidance/checklist-of-required-initial-evidence-for-form-i-485-for-informational-purposes-only"
+        },
+        {
+          "name": "Documentation of immigrant category: Form I-797 approval or receipt notice for the I-130 filed on applicant's behalf",
+          "required": true,
+          "notes": "Unless the I-485 is filed concurrently with the I-130",
+          "source_url": "https://www.uscis.gov/forms/filing-guidance/checklist-of-required-initial-evidence-for-form-i-485-for-informational-purposes-only"
+        },
+        {
+          "name": "Form I-693 in sealed civil-surgeon envelope (or partial I-693 / vaccination record)",
+          "required": true,
+          "notes": "Must accompany the I-485 or the package may be rejected",
+          "source_url": "https://www.uscis.gov/i-693"
+        },
+        {
+          "name": "Form I-864 or I-864EZ affidavit of support with sponsor's federal tax return and W-2s for the most recent year (1099s, schedules; optionally 3 years of returns, 6 months of pay stubs, employer letter)",
+          "required": true,
+          "notes": "Self-employed sponsors include Schedule C/D/E/F; joint/household income requires I-864A per household member",
+          "source_url": "https://www.uscis.gov/i-864"
+        },
+        {
+          "name": "Certified police and court records of all criminal charges, arrests, or convictions regardless of disposition",
+          "required": false,
+          "notes": "If applicable",
+          "source_url": "https://www.uscis.gov/forms/filing-guidance/checklist-of-required-initial-evidence-for-form-i-485-for-informational-purposes-only"
+        },
+        {
+          "name": "Evidence of bona fide marriage entered within 90 days of K-1 admission",
+          "required": false,
+          "notes": "Required for K nonimmigrant adjustment applicants",
+          "source_url": "https://www.uscis.gov/forms/filing-guidance/checklist-of-required-initial-evidence-for-form-i-485-for-informational-purposes-only"
+        },
+        {
+          "name": "Waiver forms if inadmissible (I-601, I-212, I-612) and A/G/NATO forms (I-508, I-566) as applicable",
+          "required": false,
+          "notes": "Situational",
+          "source_url": "https://www.uscis.gov/forms/filing-guidance/checklist-of-required-initial-evidence-for-form-i-485-for-informational-purposes-only"
+        },
+        {
+          "name": "Certified English translations of any foreign-language documents",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/forms/filing-guidance/checklist-of-required-initial-evidence-for-form-i-485-for-informational-purposes-only"
+        }
+      ]
+    },
+    {
+      "visa_code": "CONSULAR-IV",
+      "category": "consular",
+      "description": "Immigrant visa consular processing after I-130 approval: NVC stage (fees, DS-260, I-864, civil documents via CEAC) then embassy/consulate interview.",
+      "forms": [
+        {
+          "form_id": "DS-260",
+          "title": "Immigrant Visa Electronic Application (Application for Immigrant Visa and Alien Registration)",
+          "role": "primary_petition",
+          "edition_date": null,
+          "form_page_url": "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/forms/online-immigrant-visa-forms/ds-260-faqs.html",
+          "pdf_url": null,
+          "issuing_agency": "DOS",
+          "notes": "Online only, completed in CEAC after NVC fees are paid; no PDF exists. One per applicant including each accompanying family member. travel.state.gov returned HTTP 403 to direct automated fetch; confirmed via official-domain search results."
+        },
+        {
+          "form_id": "I-864",
+          "title": "Affidavit of Support Under Section 213A of the INA",
+          "role": "companion",
+          "edition_date": "10/17/24",
+          "form_page_url": "https://www.uscis.gov/i-864",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-864.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "USCIS form submitted to NVC (uploaded to CEAC) during consular processing with the sponsor's financial evidence."
+        },
+        {
+          "form_id": "I-864A",
+          "title": "Contract Between Sponsor and Household Member",
+          "role": "supplement",
+          "edition_date": "10/17/24",
+          "form_page_url": "https://www.uscis.gov/i-864a",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/I-864a.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "One per household member whose income is used to qualify. PDF filename is capitalized 'I-864a.pdf' as linked on the page."
+        },
+        {
+          "form_id": "I-864EZ",
+          "title": "Affidavit of Support Under Section 213A of the INA (EZ)",
+          "role": "supplement",
+          "edition_date": "10/17/24",
+          "form_page_url": "https://www.uscis.gov/i-864ez",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-864ez.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Simplified variant when the petitioning sponsor is the only sponsor, sponsors one immigrant, and qualifies on W-2 salary/pension income alone."
+        },
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Covers representation in the USCIS petition stage. A separate G-28I exists for matters outside the U.S."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Valid passport (biographic data page copy to NVC; original to interview)",
+          "required": true,
+          "notes": null,
+          "source_url": "https://travel.state.gov/content/travel/en/us-visas/immigrate/the-immigrant-visa-process/step-5-collect-financial-evidence-and-other-supporting-documents/step-7-collect-civil-documents.html"
+        },
+        {
+          "name": "Birth certificate (original or certified copy) for applicant and each immigrating family member",
+          "required": true,
+          "notes": "Photocopy uploaded to CEAC; originals brought to interview",
+          "source_url": "https://travel.state.gov/content/travel/en/us-visas/immigrate/the-immigrant-visa-process/step-5-collect-financial-evidence-and-other-supporting-documents/step-7-collect-civil-documents.html"
+        },
+        {
+          "name": "Marriage certificate(s) for every marriage, plus divorce/annulment/death certificates terminating prior marriages",
+          "required": true,
+          "notes": null,
+          "source_url": "https://travel.state.gov/content/travel/en/us-visas/immigrate/the-immigrant-visa-process/step-5-collect-financial-evidence-and-other-supporting-documents/step-7-collect-civil-documents.html"
+        },
+        {
+          "name": "Police certificates from all countries of residence (applicants 16 or older)",
+          "required": true,
+          "notes": "U.S. police certificates are not required for present/former U.S. residents",
+          "source_url": "https://travel.state.gov/content/travel/en/us-visas/immigrate/the-immigrant-visa-process/step-5-collect-financial-evidence-and-other-supporting-documents/step-7-collect-civil-documents.html"
+        },
+        {
+          "name": "Court and prison records; military records",
+          "required": false,
+          "notes": "If applicable",
+          "source_url": "https://travel.state.gov/content/travel/en/us-visas/immigrate/the-immigrant-visa-process/step-5-collect-financial-evidence-and-other-supporting-documents/step-7-collect-civil-documents.html"
+        },
+        {
+          "name": "Photographs per DOS immigrant-visa specification",
+          "required": true,
+          "notes": "Brought to the visa interview",
+          "source_url": "https://travel.state.gov/content/travel/en/us-visas/immigrate/the-immigrant-visa-process/step-5-collect-financial-evidence-and-other-supporting-documents/step-7-collect-civil-documents.html"
+        },
+        {
+          "name": "Sponsor financial evidence for I-864: federal tax return and W-2s for most recent year (1099s/schedules; optionally 3 years, pay stubs, employer letter)",
+          "required": true,
+          "notes": null,
+          "source_url": "https://www.uscis.gov/i-864"
+        },
+        {
+          "name": "Medical examination by a DOS-authorized panel physician",
+          "required": true,
+          "notes": "Consular cases use the panel-physician exam, not USCIS Form I-693 (domestic civil-surgeon form for AOS)",
+          "source_url": "https://travel.state.gov/content/travel/en/us-visas/immigrate/the-immigrant-visa-process.html"
+        },
+        {
+          "name": "Certified translations of documents not in English or the official language of the country of application",
+          "required": true,
+          "notes": null,
+          "source_url": "https://travel.state.gov/content/travel/en/us-visas/immigrate/the-immigrant-visa-process/step-5-collect-financial-evidence-and-other-supporting-documents/step-7-collect-civil-documents.html"
+        }
+      ]
+    },
+    {
+      "visa_code": "N-400-NATURALIZATION",
+      "category": "citizenship",
+      "description": "Naturalization to U.S. citizenship for eligible lawful permanent residents",
+      "forms": [
+        {
+          "form_id": "N-400",
+          "title": "Application for Naturalization",
+          "role": "primary_petition",
+          "edition_date": "01/20/25",
+          "form_page_url": "https://www.uscis.gov/n-400",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/n-400.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Instructions PDF also linked on page: https://www.uscis.gov/sites/default/files/document/forms/n-400instr.pdf. Can be filed online."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Copy of Permanent Resident Card (Green Card)",
+          "required": true,
+          "notes": "Listed in the page's Checklist of Required Initial Evidence",
+          "source_url": "https://www.uscis.gov/n-400"
+        },
+        {
+          "name": "Current marriage certificate and evidence of spouse's U.S. citizenship for the last 3 years (birth certificate, naturalization/citizenship certificate, U.S. passport biographical page, or consular report)",
+          "required": false,
+          "notes": "Required only when applying under the 3-year rule based on marriage to a U.S. citizen",
+          "source_url": "https://www.uscis.gov/n-400"
+        },
+        {
+          "name": "Divorce decree, annulment decree, or death certificate terminating any prior marriages",
+          "required": false,
+          "notes": "Required if applicant or spouse had prior marriages",
+          "source_url": "https://www.uscis.gov/n-400"
+        },
+        {
+          "name": "Two passport-style photographs",
+          "required": false,
+          "notes": "Only if residing outside the United States; photographs otherwise no longer required",
+          "source_url": "https://www.uscis.gov/n-400"
+        },
+        {
+          "name": "Form N-648, Medical Certification for Disability Exceptions",
+          "required": false,
+          "notes": "Only when requesting an exception to the English and/or civics tests",
+          "source_url": "https://www.uscis.gov/n-400"
+        }
+      ]
+    },
+    {
+      "visa_code": "N-336-HEARING",
+      "category": "citizenship",
+      "description": "Request for a USCIS officer hearing on a denied naturalization application",
+      "forms": [
+        {
+          "form_id": "N-336",
+          "title": "Request for a Hearing on a Decision in Naturalization Proceedings (Under Section 336 of the INA)",
+          "role": "primary_petition",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/n-336",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/n-336.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Instructions PDF also linked on page: https://www.uscis.gov/sites/default/files/document/forms/n-336instr.pdf"
+        }
+      ],
+      "supporting_documents": []
+    },
+    {
+      "visa_code": "N-600-CITIZENSHIP-CERTIFICATE",
+      "category": "citizenship",
+      "description": "Certificate of citizenship for persons who acquired or derived U.S. citizenship through parents",
+      "forms": [
+        {
+          "form_id": "N-600",
+          "title": "Application for Certificate of Citizenship",
+          "role": "primary_petition",
+          "edition_date": "01/20/25",
+          "form_page_url": "https://www.uscis.gov/n-600",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/n-600.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Instructions PDF also linked on page: https://www.uscis.gov/sites/default/files/document/forms/n-600instr.pdf. Can be filed online."
+        }
+      ],
+      "supporting_documents": []
+    },
+    {
+      "visa_code": "N-565-REPLACEMENT-CERTIFICATE",
+      "category": "citizenship",
+      "description": "Replacement of a lost, mutilated, or incorrect Certificate of Naturalization or Citizenship",
+      "forms": [
+        {
+          "form_id": "N-565",
+          "title": "Application for Replacement Naturalization/Citizenship Document",
+          "role": "primary_petition",
+          "edition_date": "02/27/25",
+          "form_page_url": "https://www.uscis.gov/n-565",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/n-565.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Instructions PDF also linked on page: https://www.uscis.gov/sites/default/files/document/forms/n-565instr.pdf. Original document mailed to the Nebraska Service Center when applicable."
+        }
+      ],
+      "supporting_documents": [
+        {
+          "name": "Original document or certificate being replaced",
+          "required": false,
+          "notes": "Required per the page checklist if applying for a new or replacement document on the basis of the original (e.g. mutilated or incorrect)",
+          "source_url": "https://www.uscis.gov/n-565"
+        },
+        {
+          "name": "Two identical passport-style photographs",
+          "required": false,
+          "notes": "Only if the applicant lives outside the United States",
+          "source_url": "https://www.uscis.gov/n-565"
+        }
+      ]
+    },
+    {
+      "visa_code": "COMMON",
+      "category": "cross_cutting",
+      "description": "Forms attached across many immigration filings",
+      "forms": [
+        {
+          "form_id": "G-28",
+          "title": "Notice of Entry of Appearance as Attorney or Accredited Representative",
+          "role": "attorney_rep",
+          "edition_date": "09/17/18",
+          "form_page_url": "https://www.uscis.gov/g-28",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Instructions PDF: https://www.uscis.gov/sites/default/files/document/forms/g-28instr.pdf"
+        },
+        {
+          "form_id": "G-28I",
+          "title": "Notice of Entry of Appearance as Attorney in Matters Outside the Geographical Confines of the United States",
+          "role": "attorney_rep",
+          "edition_date": "05/23/18",
+          "form_page_url": "https://www.uscis.gov/g-28i",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-28i.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Instructions PDF: https://www.uscis.gov/sites/default/files/document/forms/g-28iinstr.pdf"
+        },
+        {
+          "form_id": "G-1145",
+          "title": "E-Notification of Application/Petition Acceptance",
+          "role": "optional",
+          "edition_date": "09/26/14",
+          "form_page_url": "https://www.uscis.gov/g-1145",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-1145.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "No separate instructions PDF linked on the page"
+        },
+        {
+          "form_id": "I-907",
+          "title": "Request for Premium Processing Service",
+          "role": "optional",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-907",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-907.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Instructions PDF: https://www.uscis.gov/sites/default/files/document/forms/i-907instr.pdf"
+        },
+        {
+          "form_id": "I-539",
+          "title": "Application to Extend/Change Nonimmigrant Status",
+          "role": "primary_petition",
+          "edition_date": "08/28/24",
+          "form_page_url": "https://www.uscis.gov/i-539",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-539.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Supplement I-539A for co-applicants also linked on page (https://www.uscis.gov/sites/default/files/document/forms/i-539a.pdf); instructions: https://www.uscis.gov/sites/default/files/document/forms/i-539instr.pdf"
+        },
+        {
+          "form_id": "I-824",
+          "title": "Application for Action on an Approved Application or Petition",
+          "role": "primary_petition",
+          "edition_date": "04/01/24",
+          "form_page_url": "https://www.uscis.gov/i-824",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-824.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Instructions PDF: https://www.uscis.gov/sites/default/files/document/forms/i-824instr.pdf"
+        },
+        {
+          "form_id": "I-90",
+          "title": "Application to Replace Permanent Resident Card (Green Card)",
+          "role": "primary_petition",
+          "edition_date": "01/20/25",
+          "form_page_url": "https://www.uscis.gov/i-90",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-90.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Instructions PDF: https://www.uscis.gov/sites/default/files/document/forms/i-90instr.pdf"
+        },
+        {
+          "form_id": "I-765",
+          "title": "Application for Employment Authorization",
+          "role": "primary_petition",
+          "edition_date": "08/21/25",
+          "form_page_url": "https://www.uscis.gov/i-765",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-765.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Worksheet I-765WS also linked on page (https://www.uscis.gov/sites/default/files/document/forms/i-765ws.pdf); instructions: https://www.uscis.gov/sites/default/files/document/forms/i-765instr.pdf"
+        },
+        {
+          "form_id": "I-131",
+          "title": "Application for Travel Documents, Parole Documents, and Arrival/Departure Records",
+          "role": "primary_petition",
+          "edition_date": "01/20/25",
+          "form_page_url": "https://www.uscis.gov/i-131",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/i-131.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Instructions PDF: https://www.uscis.gov/sites/default/files/document/forms/i-131instr.pdf"
+        },
+        {
+          "form_id": "G-1450",
+          "title": "Authorization for Credit Card Transactions",
+          "role": "optional",
+          "edition_date": "02/06/26",
+          "form_page_url": "https://www.uscis.gov/g-1450",
+          "pdf_url": "https://www.uscis.gov/sites/default/files/document/forms/g-1450.pdf",
+          "issuing_agency": "USCIS",
+          "notes": "Instructions PDF: https://www.uscis.gov/sites/default/files/document/forms/g-1450instr.pdf"
+        }
+      ],
+      "supporting_documents": []
+    }
+  ],
+  "sources": [
+    "https://eforms.state.gov/FormInformation.aspx?FormID=239",
+    "https://flag.dol.gov/programs/lca",
+    "https://flag.dol.gov/programs/perm",
+    "https://travel.state.gov/content/travel/en/us-visas/visa-information-resources/forms/ds-160-online-nonimmigrant-visa-application.html",
+    "https://www.uscis.gov/forms/filing-guidance/checklist-of-required-initial-evidence-for-form-i-485-for-informational-purposes-only",
+    "https://www.uscis.gov/g-1145",
+    "https://www.uscis.gov/g-1450",
+    "https://www.uscis.gov/g-28",
+    "https://www.uscis.gov/g-28i",
+    "https://www.uscis.gov/i-129",
+    "https://www.uscis.gov/i-129f",
+    "https://www.uscis.gov/i-129s",
+    "https://www.uscis.gov/i-130",
+    "https://www.uscis.gov/i-131",
+    "https://www.uscis.gov/i-134",
+    "https://www.uscis.gov/i-140",
+    "https://www.uscis.gov/i-485",
+    "https://www.uscis.gov/i-526",
+    "https://www.uscis.gov/i-526e",
+    "https://www.uscis.gov/i-539",
+    "https://www.uscis.gov/i-693",
+    "https://www.uscis.gov/i-765",
+    "https://www.uscis.gov/i-824",
+    "https://www.uscis.gov/i-829",
+    "https://www.uscis.gov/i-864",
+    "https://www.uscis.gov/i-864a",
+    "https://www.uscis.gov/i-864ez",
+    "https://www.uscis.gov/i-864w",
+    "https://www.uscis.gov/i-90",
+    "https://www.uscis.gov/i-907",
+    "https://www.uscis.gov/i-944",
+    "https://www.uscis.gov/n-336",
+    "https://www.uscis.gov/n-400",
+    "https://www.uscis.gov/n-565",
+    "https://www.uscis.gov/n-600",
+    "https://www.uscis.gov/sites/default/files/document/forms/i-129.pdf",
+    "https://www.uscis.gov/working-in-the-united-states/h-1b-specialty-occupations",
+    "https://www.uscis.gov/working-in-the-united-states/permanent-workers/eb-5-immigrant-investor-program",
+    "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-first-preference-eb-1",
+    "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-second-preference-eb-2",
+    "https://www.uscis.gov/working-in-the-united-states/permanent-workers/employment-based-immigration-third-preference-eb-3",
+    "https://www.uscis.gov/working-in-the-united-states/temporary-workers/e-2-treaty-investors",
+    "https://www.uscis.gov/working-in-the-united-states/temporary-workers/l-1a-intracompany-transferee-executive-or-manager",
+    "https://www.uscis.gov/working-in-the-united-states/temporary-workers/l-1b-intracompany-transferee-specialized-knowledge",
+    "https://www.uscis.gov/working-in-the-united-states/temporary-workers/o-1-visa-individuals-with-extraordinary-ability-or-achievement",
+    "https://www.uscis.gov/working-in-the-united-states/temporary-workers/tn-nafta-professionals"
+  ]
+}

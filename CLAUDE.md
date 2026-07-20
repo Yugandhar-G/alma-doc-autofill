@@ -42,6 +42,7 @@ Second feature: O-1A / EB-1A eligibility screener — intake + evidence docs →
 - `backend/app/extraction/` — Gemini client, PDF/image ingestion, prompts
 - `backend/app/population/` — Playwright fill, field map, verification
 - `backend/app/screener/` — criteria registry (USCIS knowledge as data), LangGraph graph + nodes, citation audit, evidence extraction, grounded web tool, APIRouter
+- `backend/app/forms/` — visa→forms registry (USCIS knowledge as data: 23 visa profiles, uscis.gov-verified editions + PDF URLs + supporting-doc checklists in `data/forms_registry.json`) + allow-listed form-library downloader (`python -m app.forms.library` → `uploads/forms_library/` with sha256 manifest)
 - `backend/app/storage/` — Supabase + local fallback behind 3-method interface
 - `backend/validation/` — extraction personas + screener personas and eval runners
 - `frontend/` — Next.js App Router upload UI + review table + `/screener` wizard

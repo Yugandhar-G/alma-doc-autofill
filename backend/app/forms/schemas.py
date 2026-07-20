@@ -24,7 +24,8 @@ IssuingAgency = Literal["USCIS", "DOL", "DOS"]
 _ALLOWED_PDF_HOSTS = ("www.uscis.gov", "uscis.gov")
 _ALLOWED_PAGE_HOSTS = _ALLOWED_PDF_HOSTS + (
     "www.dol.gov", "dol.gov", "flag.dol.gov",
-    "travel.state.gov", "www.foreignlaborcert.doleta.gov",
+    "travel.state.gov", "eforms.state.gov", "ceac.state.gov",
+    "www.foreignlaborcert.doleta.gov",
 )
 
 
