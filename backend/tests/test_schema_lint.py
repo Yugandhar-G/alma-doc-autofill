@@ -19,6 +19,14 @@ import annotated_types
 import pytest
 from pydantic import BaseModel
 
+from app.packages.matter_intake.schemas import (
+    ChaseDraft,
+    GapFinding,
+    GapFindings,
+    PlanStep,
+    ProposedPlan,
+    ResearchAnswer,
+)
 from app.packages.preflight.schemas import PreflightFinding, PreflightReport
 from app.schemas import (
     AttorneyInfo,
@@ -65,6 +73,14 @@ RESPONSE_SCHEMA_MODELS: tuple[type[BaseModel], ...] = (
     # plane that drafts findings via a model inherits a Gemini-safe schema)
     PreflightFinding,
     PreflightReport,
+    # matter-intake (chase / planner / ask distillation schemas — handed to
+    # Gemini directly, so flatness is enforced here)
+    GapFindings,
+    GapFinding,
+    ChaseDraft,
+    ProposedPlan,
+    PlanStep,
+    ResearchAnswer,
 )
 
 
