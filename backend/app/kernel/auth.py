@@ -25,9 +25,13 @@ Security: tokens are never logged or echoed. Every rejection raises a single
 token, the claims, or which check failed in a way that leaks the credential.
 """
 import asyncio
+import hashlib
+import hmac
 import logging
+import time
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any
 
 import jwt
@@ -179,6 +183,74 @@ def require_role(
         return principal
 
     return _dependency
+
+
+# --- Scoped artifact-download tokens ---------------------------------------
+# A single-purpose allowance for browser-initiated downloads: the artifact-GET
+# route (GET /api/population-artifact/{id}) is reachable from an <a href> that
+# carries no Authorization header, so it also accepts a short-lived signed token
+# as ?t=. The token is an HMAC over (artifact_id, expiry) — it authorizes ONE
+# artifact id for a few minutes, nothing else. Programmatic callers keep using
+# the bearer path; this never widens their access.
+_TOKEN_SEP = "."
+
+
+class DownloadTokenResult(Enum):
+    """Outcome of verifying a ?t= artifact-download token."""
+
+    VALID = "valid"
+    INVALID = "invalid"  # forged, expired, wrong id, or malformed
+    NOT_CONFIGURED = "not_configured"  # no signing secret (pure-local dev)
+
+
+def _download_secret(settings: Settings) -> str | None:
+    """Signing secret for download tokens: the dedicated setting, else the
+    Supabase JWT secret (same trust root as request auth). None in pure-local
+    dev, where the route needs no token to begin with."""
+    return settings.download_token_secret or settings.supabase_jwt_secret
+
+
+def _sign_download(artifact_id: str, expiry: int, secret: str) -> str:
+    message = f"{artifact_id}{_TOKEN_SEP}{expiry}".encode()
+    return hmac.new(secret.encode(), message, hashlib.sha256).hexdigest()
+
+
+def mint_download_token(
+    artifact_id: str, settings: Settings, now: int | None = None
+) -> str | None:
+    """Mint a short-lived token authorizing a download of exactly this
+    artifact id. Returns None when no signing secret is configured (dev mode —
+    the route serves without a token there)."""
+    secret = _download_secret(settings)
+    if not secret:
+        return None
+    expiry = (now or int(time.time())) + settings.download_token_ttl_seconds
+    signature = _sign_download(artifact_id, expiry, secret)
+    return f"{expiry}{_TOKEN_SEP}{signature}"
+
+
+def verify_download_token(
+    artifact_id: str, token: str, settings: Settings, now: int | None = None
+) -> DownloadTokenResult:
+    """Verify a ?t= token against an artifact id. Constant-time signature
+    compare; rejects expiry, wrong id, and malformed tokens the same way (no
+    oracle). NOT_CONFIGURED when there is no secret (dev)."""
+    secret = _download_secret(settings)
+    if not secret:
+        return DownloadTokenResult.NOT_CONFIGURED
+    expiry_raw, _, signature = token.partition(_TOKEN_SEP)
+    if not signature:
+        return DownloadTokenResult.INVALID
+    try:
+        expiry = int(expiry_raw)
+    except ValueError:
+        return DownloadTokenResult.INVALID
+    if (now or int(time.time())) >= expiry:
+        return DownloadTokenResult.INVALID
+    expected = _sign_download(artifact_id, expiry, secret)
+    if not hmac.compare_digest(signature, expected):
+        return DownloadTokenResult.INVALID
+    return DownloadTokenResult.VALID
 
 
 def install_auth(app: FastAPI) -> None:

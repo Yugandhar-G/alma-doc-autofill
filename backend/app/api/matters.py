@@ -22,6 +22,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, ValidationError
 
 from app.kernel.auth import Principal, get_principal, scope_of
+from app.kernel.ratelimit import rate_limit
 from app.kernel.runtime.workflows import WorkflowError, WorkflowService
 from app.kernel.store.base import MatterStore, TenantScope, get_matter_store
 from app.packages.autofill.service import read_capped
@@ -91,7 +92,7 @@ def _scope(principal: Principal) -> TenantScope:
 
 
 # --- Matters ----------------------------------------------------------------
-@router.post("/matters")
+@router.post("/matters", dependencies=[Depends(rate_limit("write"))])
 async def create_matter(
     req: CreateMatterRequest,
     principal: Principal = Depends(get_principal),
@@ -136,7 +137,9 @@ async def get_matter(
     )
 
 
-@router.post("/matters/{matter_id}/documents")
+@router.post(
+    "/matters/{matter_id}/documents", dependencies=[Depends(rate_limit("write"))]
+)
 async def upload_documents(
     matter_id: str,
     files: list[UploadFile] = File(...),
@@ -176,7 +179,7 @@ async def upload_documents(
     )
 
 
-@router.post("/matters/{matter_id}/runs")
+@router.post("/matters/{matter_id}/runs", dependencies=[Depends(rate_limit("write"))])
 async def start_run(
     matter_id: str,
     req: StartRunRequest,
@@ -228,7 +231,7 @@ async def run_status(
     )
 
 
-@router.post("/runs/{run_id}/resume")
+@router.post("/runs/{run_id}/resume", dependencies=[Depends(rate_limit("write"))])
 async def resume_run(
     run_id: str,
     req: ResumeRunRequest,

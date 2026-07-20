@@ -60,6 +60,21 @@ class Settings(BaseSettings):
     # Frontend origin for CORS
     frontend_origin: str = "http://localhost:3000"
 
+    # Scoped artifact-download tokens. Browser <a href> downloads carry no
+    # Authorization header, so the one artifact-GET route also accepts a
+    # short-lived HMAC token as ?t=. Secret falls back to supabase_jwt_secret
+    # (see kernel/auth.py:download_token_secret); unset in pure-local dev means
+    # the route serves without a token (nothing to enforce there).
+    download_token_secret: str | None = None
+    download_token_ttl_seconds: int = 300  # 5 min — enough to click a link
+
+    # Rate limiting (in-process; per firm_id + route class). Strict on
+    # write/run-start endpoints, reads unthrottled. Single-process desktop
+    # reality — a Redis-backed limiter is the multi-node seam (see
+    # kernel/ratelimit.py). Tests set enabled=False or a small per-min cap.
+    rate_limit_enabled: bool = True
+    rate_limit_writes_per_min: int = 60
+
     # Workflow-run checkpointing (per package; one DB each until the matter
     # store consolidates them)
     autofill_checkpoint_path: str = "uploads/autofill/checkpoints.db"

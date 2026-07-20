@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from app.config import Settings, get_settings
 from app.kernel.auth import Principal, get_principal, scope_of
+from app.kernel.ratelimit import rate_limit
 from app.kernel.store.base import MatterStore, get_matter_store
 from app.packages.matter_intake.ask import ask_matter
 from app.schemas import ApiResponse
@@ -28,7 +29,9 @@ class AskRequest(BaseModel):
 def router_factory() -> APIRouter:
     router = APIRouter()
 
-    @router.post("/matters/{matter_id}/ask")
+    @router.post(
+        "/matters/{matter_id}/ask", dependencies=[Depends(rate_limit("write"))]
+    )
     async def ask(
         matter_id: str,
         req: AskRequest,

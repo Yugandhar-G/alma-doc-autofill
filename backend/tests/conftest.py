@@ -8,12 +8,23 @@ import pytest
 from PIL import Image
 
 from app.config import Settings
+from app.kernel.ratelimit import reset_rate_limits
 
 
 @pytest.fixture
 def settings() -> Settings:
     """Isolated Settings with defaults — never the lru-cached app instance."""
     return Settings(_env_file=None)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_rate_limits():
+    """The rate limiter's counters are a process-wide singleton; clear them
+    before each test so one test's write burst never leaks into the next
+    (matters run against the default-store firm in some suites)."""
+    reset_rate_limits()
+    yield
+    reset_rate_limits()
 
 
 def make_noise_image(width: int, height: int, seed: int = 7) -> Image.Image:

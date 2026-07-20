@@ -125,21 +125,76 @@ Credential Manager) should replace the env passthrough so users enter the key
 once in-app. The injection point is `resolve_sidecar()` in `src-tauri/src/main.rs`
 (set `.env(...)` on the sidecar `Command`).
 
-## Updater & signing (SCAFFOLDED — inert until Phase E2)
+## Updater & signing
 
-Config placeholders exist but are not active; producing a signed, updatable
-build requires real certificates and keys that are **not** committed:
+Producing a signed, auto-updating build requires real certificates and keys that
+are deliberately **not** committed. The config placeholders (`plugins.updater`
+inert, empty signing identities) ship inert so an unsigned local build still
+runs; the checklists below turn each on. Do each once, then keep the secrets in
+CI, never in the repo.
 
-- **tauri.conf.json → `plugins.updater`** — `active: false`, with placeholder
-  `endpoints` and `pubkey`. To activate: add `tauri-plugin-updater`, replace the
-  pubkey with a real minisign public key, register the plugin in `main.rs`, and
-  set `bundle.createUpdaterArtifacts: true`. (If a toolchain build rejects the
-  placeholder pubkey before the plugin is added, drop the `pubkey` line until E2.)
-- **macOS signing/notarization** — set `bundle.macOS.signingIdentity` +
-  notarization env (`APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`). Unsigned
-  builds run locally but Gatekeeper blocks distribution.
-- **Windows signing** — set `bundle.windows.certificateThumbprint` (or
-  `WINDOWS_CERTIFICATE` env) with an Authenticode cert.
+### macOS — Developer ID signing + notarization
+
+Prerequisite: an Apple Developer account and a **Developer ID Application**
+certificate installed in the login keychain.
+
+1. Find the identity name: `security find-identity -v -p codesigning`
+   → `Developer ID Application: Your Firm LLC (TEAMID)`.
+2. Set `bundle.macOS.signingIdentity` in `tauri.conf.json` to that string (or
+   export `APPLE_SIGNING_IDENTITY`).
+3. Provide notarization credentials as env before `cargo tauri build` — use an
+   app-specific password (create at appleid.apple.com), never your Apple ID
+   password:
+   ```bash
+   export APPLE_ID="you@firm.com"
+   export APPLE_PASSWORD="abcd-efgh-ijkl-mnop"   # app-specific password
+   export APPLE_TEAM_ID="TEAMID"
+   ```
+   (Alternatively an API key: `APPLE_API_ISSUER`, `APPLE_API_KEY`,
+   `APPLE_API_KEY_PATH`.)
+4. `cargo tauri build` signs, submits to Apple's notary service, and staples the
+   ticket to the `.dmg`/`.app`.
+5. Verify: `spctl -a -vv Yunaki.app` → `accepted, source=Notarized Developer ID`
+   and `codesign --verify --deep --strict Yunaki.app`.
+
+Without this, Gatekeeper blocks the app on other machines ("cannot be opened
+because the developer cannot be verified").
+
+### Windows — Authenticode signing
+
+Prerequisite: an **OV or EV code-signing certificate** (EV is required to avoid
+SmartScreen warnings on first download).
+
+1. Import the cert; note its SHA-1 thumbprint
+   (`certutil -store My` or the Certificates MMC snap-in).
+2. Set `bundle.windows.certificateThumbprint` in `tauri.conf.json` (or export
+   `WINDOWS_CERTIFICATE` / `WINDOWS_CERTIFICATE_PASSWORD` for a PFX in CI).
+3. Optional but recommended — pin the timestamp server so signatures outlive the
+   cert: `bundle.windows.timestampUrl = "http://timestamp.digicert.com"`.
+4. Build on Windows (`cargo tauri build`); the NSIS installer and `.exe` are
+   signed via `signtool`.
+5. Verify: `signtool verify /pa /v Yunaki_x64-setup.exe`.
+
+### Tauri updater (auto-update channel)
+
+1. Generate the signing keypair (private key stays OUT of the repo — store it in
+   the CI secret store):
+   ```bash
+   cargo tauri signer generate -w ~/.tauri/yunaki-updater.key
+   ```
+   This prints a **public key** (minisign format) and writes the private key.
+2. In `tauri.conf.json → plugins.updater`: set `active: true`, replace `pubkey`
+   with the generated public key, and point `endpoints` at your release manifest
+   URL (e.g. `https://releases.yourfirm.com/yunaki/{{target}}/{{arch}}/{{current_version}}`).
+3. Add the plugin dependency and register it in `src-tauri/src/main.rs`
+   (`tauri_plugin_updater::Builder`). Add `tauri-plugin-updater` to `Cargo.toml`.
+4. Set `bundle.createUpdaterArtifacts: true` so the build emits the signed
+   `.sig` files alongside each artifact.
+5. On release, sign artifacts with the private key
+   (`TAURI_SIGNING_PRIVATE_KEY` env during build) and publish them plus a
+   `latest.json` manifest to the endpoint. The app checks the endpoint on launch
+   and verifies each update's signature against the embedded public key before
+   applying it — a tampered update is rejected.
 
 ## Windows notes (scaffolded, unverified)
 

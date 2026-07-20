@@ -8,19 +8,28 @@ never do — documents are referenced by content hash only.
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, UploadFile
+from fastapi import Depends, FastAPI, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
-from app.kernel.auth import install_auth
+from app.kernel.auth import (
+    DownloadTokenResult,
+    Principal,
+    get_principal,
+    install_auth,
+    mint_download_token,
+    verify_download_token,
+)
+from app.kernel.config import Settings, get_settings as get_kernel_settings
 from app.kernel.observability import (
     TelemetryValue,
     flush as observability_flush,
     record_frontend_event,
     request_trace,
 )
+from app.kernel.ratelimit import install_rate_limit
 from app.observability import envelope_stats, report_stats
 from app.packages.autofill.service import extract_slots
 from app.population import populate_form
@@ -67,6 +76,7 @@ def create_app(registry: tuple | None = None) -> FastAPI:
 
     app = FastAPI(title="yunaki-doc-autofill", lifespan=_lifespan)
     install_auth(app)  # AuthError → 401 in the ApiResponse envelope
+    install_rate_limit(app)  # RateLimitError → 429 in the same envelope
     app.include_router(screener_router)  # legacy screener session API
     app.include_router(matter_router)  # matter API (matters/documents/runs/inbox)
     for package in packages:
@@ -177,10 +187,28 @@ def create_app(registry: tuple | None = None) -> FastAPI:
             )
 
     @app.get("/api/population-artifact/{artifact_id}")
-    async def population_artifact(artifact_id: str, download: bool = False):
+    async def population_artifact(artifact_id: str, download: bool = False, t: str | None = None):
         """Serve the captured filled-form artifact (PDF or PNG). The id is a
         bare content hash; anything else resolves to None inside
-        stored_artifact_path, so no path input ever reaches the filesystem."""
+        stored_artifact_path, so no path input ever reaches the filesystem.
+
+        Two access paths, one route:
+        - Programmatic: the desktop sidecar's bearer middleware has already
+          authorized the request; no ?t= is needed.
+        - Browser download: an <a href> carries no Authorization header, so it
+          instead carries a short-lived signed ?t= token scoped to THIS id
+          (minted via POST .../link). A present-but-invalid token is a hard 403
+          — a forged/expired token never serves. No token in dev (no signing
+          secret) serves as before."""
+        if t is not None:
+            result = verify_download_token(artifact_id, t, get_settings())
+            if result is DownloadTokenResult.INVALID:
+                return JSONResponse(
+                    status_code=403,
+                    content=ApiResponse(
+                        success=False, error="Invalid or expired download link."
+                    ).model_dump(),
+                )
         path = stored_artifact_path(artifact_id)
         if path is None:
             return JSONResponse(
@@ -194,6 +222,27 @@ def create_app(registry: tuple | None = None) -> FastAPI:
             media_type=_ARTIFACT_MEDIA_TYPES[path.suffix],
             filename=f"a28-filled{path.suffix}",
             content_disposition_type="attachment" if download else "inline",
+        )
+
+    @app.post("/api/population-artifact/{artifact_id}/link")
+    async def population_artifact_link(
+        artifact_id: str,
+        _principal: Principal = Depends(get_principal),
+        settings: Settings = Depends(get_kernel_settings),
+    ) -> ApiResponse:
+        """Mint a browser-usable download URL for an artifact the caller is
+        authorized to fetch. Behind get_principal, so an unauthenticated caller
+        cannot mint links; the returned ?t= token then lets the packaged app's
+        <a href> download without an Authorization header. Returns a token-free
+        URL in dev (no signing secret — the route needs no token there)."""
+        if stored_artifact_path(artifact_id) is None:
+            return ApiResponse(success=False, error="No such artifact.")
+        token = mint_download_token(artifact_id, settings)
+        base = f"/api/population-artifact/{artifact_id}?download=true"
+        url = f"{base}&t={token}" if token else base
+        return ApiResponse(
+            success=True,
+            data={"url": url, "expires_in": settings.download_token_ttl_seconds if token else None},
         )
 
     @app.post("/api/telemetry")

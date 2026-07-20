@@ -27,6 +27,7 @@ import argparse
 import hmac
 import json
 import logging
+from urllib.parse import parse_qs
 
 import uvicorn
 
@@ -48,6 +49,12 @@ class BearerTokenMiddleware:
       - non-HTTP scopes (lifespan, websocket) pass through untouched,
       - CORS preflight (OPTIONS) carries no Authorization header by spec, so it
         passes through to the CORS layer,
+      - GET of an artifact download that carries a ?t= query token: an <a href>
+        download cannot set an Authorization header, so this route accepts a
+        short-lived signed token instead. This is a STRUCTURAL exemption only —
+        the middleware just lets the request reach the handler, which does the
+        cryptographic validation and 403s a forged/expired token. A request
+        with neither bearer nor ?t= is still rejected here.
       - token is None (dev mode) → enforcement disabled entirely.
     """
 
@@ -63,6 +70,9 @@ class BearerTokenMiddleware:
         if scope.get("method") == "OPTIONS":
             await self.app(scope, receive, send)
             return
+        if self._is_signed_download(scope):
+            await self.app(scope, receive, send)
+            return
 
         header_map = dict(scope.get("headers") or [])
         provided = header_map.get(b"authorization", b"").decode("latin-1")
@@ -71,6 +81,21 @@ class BearerTokenMiddleware:
             await self._reject(send)
             return
         await self.app(scope, receive, send)
+
+    @staticmethod
+    def _is_signed_download(scope) -> bool:
+        """True for `GET /api/population-artifact/<id>?...t=<token>...` — the
+        one browser-download route allowed to authenticate via ?t= instead of a
+        bearer header. Only presence is checked here; the handler validates the
+        token itself."""
+        if scope.get("method") != "GET":
+            return False
+        path = scope.get("path", "")
+        if not path.startswith("/api/population-artifact/"):
+            return False
+        params = parse_qs(scope.get("query_string", b"").decode("latin-1"))
+        token = params.get("t", [""])[0]
+        return bool(token)
 
     @staticmethod
     async def _reject(send) -> None:
