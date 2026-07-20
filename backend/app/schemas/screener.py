@@ -132,7 +132,10 @@ class EvidenceItem(BaseModel):
 
     claim: str = Field(min_length=1, max_length=1000)
     criterion_ids: list[str] = Field(default_factory=list, max_length=10)
-    sources: list[SourceRef] = Field(min_length=1, max_length=10)
+    # No max_length on sources: maxItems on a list of nested objects is the
+    # documented Gemini response_schema 400 risk (see EvidenceMatrix.items);
+    # compile._sanitize audits every source deterministically anyway.
+    sources: list[SourceRef] = Field(min_length=1)
 
 
 class EvidenceMatrix(BaseModel):
@@ -208,9 +211,10 @@ class CriterionAssessment(BaseModel):
     criterion_id: str
     verdict: CriterionVerdict
     reasoning: str = Field(min_length=1, max_length=4000)
+    # No max_length (list of nested objects doubles as response_schema — see
+    # EvidenceMatrix.items); the citation audit bounds what survives.
     citations: list[SourceRef] = Field(
         default_factory=list,
-        max_length=15,
         description="Audited post-hoc; a verdict above not_met with zero valid citations is downgraded.",
     )
     gaps: list[str] = Field(default_factory=list, max_length=10)
@@ -223,7 +227,8 @@ class FinalMeritsAssessment(BaseModel):
 
     conclusion: Literal["favorable", "uncertain", "unfavorable"]
     reasoning: str = Field(min_length=1, max_length=4000)
-    citations: list[SourceRef] = Field(default_factory=list, max_length=15)
+    # No max_length: same response_schema constraint as EvidenceMatrix.items.
+    citations: list[SourceRef] = Field(default_factory=list)
 
 
 class VisaVerdict(BaseModel):

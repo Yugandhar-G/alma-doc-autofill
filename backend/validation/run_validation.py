@@ -10,6 +10,10 @@ Per sample:
    extracted data; population mismatches/errors counted from the report
 4. aggregate → docs/validation-report.md
 
+Thin config over app.kernel.evalkit.Harness: this module owns sample loading,
+field classification, and report rendering; the kernel owns concurrency,
+per-sample isolation, and the fabricated-is-never-exit-0 gate.
+
 Usage: .venv/bin/python -m validation.run_validation [--limit N]
 Requires GEMINI_API_KEY in backend/.env. ~20 flash calls per full run.
 """
@@ -21,6 +25,7 @@ from collections import Counter
 from pathlib import Path
 
 from app.extraction import extract_document
+from app.kernel.evalkit import Harness, retry_async
 from app.population import populate_form
 from app.schemas import G28Data
 from validation.personas import LENIENT_FIELDS, PERSONAS, expected_for
@@ -55,13 +60,11 @@ def classify(expected: object, actual: object) -> str:
 
 
 async def _extract_with_retry(pdf_bytes: bytes, name: str):
-    for attempt in range(_EXTRACT_RETRIES + 1):
-        try:
-            return await extract_document(pdf_bytes, f"{name}.pdf", "g28")
-        except Exception:
-            if attempt == _EXTRACT_RETRIES:
-                raise
-            await asyncio.sleep(1.5 * (attempt + 1))
+    return await retry_async(
+        lambda: extract_document(pdf_bytes, f"{name}.pdf", "g28"),
+        retries=_EXTRACT_RETRIES,
+        base_delay=1.5,
+    )
 
 
 async def run_sample(
@@ -180,6 +183,36 @@ def render_report(results: list[dict]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def gate(results: list[dict]) -> int:
+    """0 only when every sample scored, every field matched, and every
+    population run came back clean; otherwise 2."""
+    scored = [r for r in results if "fields" in r]
+    all_clean = all(
+        set(r["fields"].values()) == {"match"} and r["populate"]["ok"] for r in scored
+    ) and len(scored) == len(results)
+    return 0 if all_clean else 2
+
+
+def build_harness(names: list[str]) -> Harness:
+    # Concurrency=None: the outer gather is unbounded; the two stage
+    # semaphores inside run_sample bound extraction and population separately.
+    extract_sem = asyncio.Semaphore(_EXTRACT_CONCURRENCY)
+    populate_sem = asyncio.Semaphore(_POPULATE_CONCURRENCY)
+    return Harness(
+        personas=names,
+        run_one=lambda name: run_sample(name, extract_sem, populate_sem),
+        classes_of=lambda r: r.get("fields", {}).values(),
+        render=render_report,
+        gate=gate,
+        worst_class="fabricated",
+        defect_exit_code=2,
+        error_result=lambda name, exc: {
+            "name": name,
+            "extract_error": type(exc).__name__,
+        },
+    )
+
+
 async def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=None, help="run first N samples")
@@ -191,24 +224,17 @@ async def main() -> int:
         print(f"missing samples {missing}; run generate_samples first", file=sys.stderr)
         return 1
 
+    harness = build_harness(names)
     started = time.monotonic()
-    extract_sem = asyncio.Semaphore(_EXTRACT_CONCURRENCY)
-    populate_sem = asyncio.Semaphore(_POPULATE_CONCURRENCY)
-    results = await asyncio.gather(
-        *(run_sample(n, extract_sem, populate_sem) for n in names)
-    )
+    results = await harness.run()
     elapsed = time.monotonic() - started
     print(f"{len(names)} samples in {elapsed:.1f}s "
           f"(extract x{_EXTRACT_CONCURRENCY}, populate x{_POPULATE_CONCURRENCY})\n")
-    report = render_report(list(results))
+    report = harness.render(list(results))
     REPORT.write_text(report, encoding="utf-8")
     print(report)
     print(f"report written to {REPORT}")
-    scored = [r for r in results if "fields" in r]
-    all_clean = all(
-        set(r["fields"].values()) == {"match"} and r["populate"]["ok"] for r in scored
-    ) and len(scored) == len(results)
-    return 0 if all_clean else 2
+    return harness.exit_code(results)
 
 
 if __name__ == "__main__":

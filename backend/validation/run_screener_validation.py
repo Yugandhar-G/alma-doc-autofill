@@ -7,6 +7,10 @@ Exit code 0 only when there are ZERO overclaims — the harness's hard bar.
 Underclaims/lenient are reported but do not fail the run (a conservative
 screener is acceptable; an optimistic one is not).
 
+Thin config over app.kernel.evalkit.Harness: this module owns the graph
+invocation, banded classification, and report rendering; the kernel owns
+concurrency, per-persona isolation, and the overclaim-is-never-exit-0 gate.
+
 Usage: cd backend && python -m validation.run_screener_validation
 Requires GEMINI_API_KEY (live calls, ~2 LLM calls + criteria-count per persona).
 """
@@ -25,6 +29,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.types import Command
 
 from app.config import get_settings
+from app.kernel.evalkit import HARNESS_ERROR_KEY, Harness
 from app.screener.criteria import criteria_for_targets
 from app.screener.graph import build_graph
 from app.screener.state import ScreenerState
@@ -102,8 +107,28 @@ async def run_persona(persona: ScreenerPersona, graph) -> dict:
     }
 
 
-def render_report(results: list[dict]) -> tuple[str, Counter]:
+def collect_totals(results: list[dict]) -> Counter:
+    """Class totals across all personas: criterion classes by name,
+    recommendation classes prefixed rec_."""
     totals: Counter = Counter()
+    for result in results:
+        for row in result.get("criteria", ()):
+            totals[row["class"]] += 1
+        for rec in result.get("recommendations", ()):
+            totals[f"rec_{rec['class']}"] += 1
+    return totals
+
+
+def classes_of(result: dict) -> set[str]:
+    """Every classification label in one persona result (criteria and
+    recommendations alike) — the kernel's overclaim gate reads these."""
+    return {row["class"] for row in result.get("criteria", ())} | {
+        rec["class"] for rec in result.get("recommendations", ())
+    }
+
+
+def render_report(results: list[dict]) -> str:
+    totals = collect_totals(results)
     lines = [
         "# Screener Validation Report",
         "",
@@ -116,10 +141,15 @@ def render_report(results: list[dict]) -> tuple[str, Counter]:
         lines.append(f"## {result['persona']}  ({result['seconds']}s, "
                      f"{result['warnings']} warnings)")
         lines.append("")
+        if HARNESS_ERROR_KEY in result:
+            # Previously a raising persona killed the whole run; the kernel
+            # now isolates it — surfaced here and forced nonzero at exit.
+            lines.append(f"**RUN FAILED**: {result[HARNESS_ERROR_KEY]}")
+            lines.append("")
+            continue
         lines.append("| criterion | expected | actual | class |")
         lines.append("|---|---|---|---|")
         for row in result["criteria"]:
-            totals[row["class"]] += 1
             flag = " ⚠️" if row["class"] == "overclaim" else ""
             lines.append(
                 f"| {row['criterion']} | {row['expected']} | {row['actual']} "
@@ -127,7 +157,6 @@ def render_report(results: list[dict]) -> tuple[str, Counter]:
             )
         lines.append("")
         for rec in result["recommendations"]:
-            totals[f"rec_{rec['class']}"] += 1
             flag = " ⚠️" if rec["class"] == "overclaim" else ""
             lines.append(
                 f"- **{rec['visa']} recommendation**: expected {rec['expected']}, "
@@ -148,7 +177,35 @@ def render_report(results: list[dict]) -> tuple[str, Counter]:
         f"{totals['rec_underclaim']} underclaim, "
         f"**{totals['rec_overclaim']} overclaim**, {totals['rec_missing']} missing"
     )
-    return "\n".join(lines) + "\n", totals
+    return "\n".join(lines) + "\n"
+
+
+def gate(results: list[dict]) -> int:
+    totals = collect_totals(results)
+    return 1 if totals["overclaim"] + totals["rec_overclaim"] else 0
+
+
+def build_harness(graph) -> Harness:
+    return Harness(
+        personas=PERSONAS,
+        run_one=lambda persona: run_persona(persona, graph),
+        classes_of=classes_of,
+        render=render_report,
+        gate=gate,
+        worst_class="overclaim",
+        concurrency=CONCURRENCY,
+        error_result=lambda persona, exc: {
+            "persona": persona.name,
+            "criteria": [],
+            "recommendations": [],
+            "warnings": 0,
+            "seconds": 0.0,
+        },
+        before_item=lambda persona: print(f"→ {persona.name}"),
+        after_item=lambda persona, result: print(
+            f"✓ {persona.name} ({result['seconds']}s)"
+        ),
+    )
 
 
 async def main() -> int:
@@ -157,25 +214,18 @@ async def main() -> int:
     assert settings.screener_web_enrichment is False  # env guard above worked
 
     graph = build_graph(checkpointer=MemorySaver())
-    semaphore = asyncio.Semaphore(CONCURRENCY)
-
-    async def guarded(persona: ScreenerPersona) -> dict:
-        async with semaphore:
-            print(f"→ {persona.name}")
-            result = await run_persona(persona, graph)
-            print(f"✓ {persona.name} ({result['seconds']}s)")
-            return result
-
-    results = await asyncio.gather(*(guarded(p) for p in PERSONAS))
-    text, totals = render_report(list(results))
+    harness = build_harness(graph)
+    results = await harness.run()
+    text = harness.render(list(results))
     REPORT_PATH.write_text(text)
     print(f"\nreport → {REPORT_PATH}")
+    totals = collect_totals(list(results))
     overclaims = totals["overclaim"] + totals["rec_overclaim"]
     print(
         f"criteria correct={totals['correct']} lenient={totals['lenient']} "
         f"underclaim={totals['underclaim']} OVERCLAIM={overclaims}"
     )
-    return 1 if overclaims else 0
+    return harness.exit_code(results)
 
 
 if __name__ == "__main__":
