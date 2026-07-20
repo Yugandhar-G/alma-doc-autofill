@@ -7,6 +7,7 @@ import { Chip } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ApiError } from "@/lib/api";
 import { formatDateTime } from "@/lib/matters/format";
+import { runHref } from "@/lib/nav";
 import { useInbox, useRun } from "@/lib/matters/queries";
 import type { Interrupt } from "@/lib/matters/types";
 
@@ -49,7 +50,7 @@ function InboxRow({ interrupt }: { interrupt: Interrupt }) {
   return (
     <li>
       <Link
-        href={`/matters/${matterId}/runs/${interrupt.run_id}`}
+        href={runHref(matterId, interrupt.run_id)}
         className="block transition-colors hover:bg-accent-wash/40 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
       >
         {body}

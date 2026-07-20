@@ -1,5 +1,5 @@
 import { Chip, severityTone } from "@/components/ui/Chip";
-import { API_BASE } from "@/lib/config";
+import { getApiBase } from "@/lib/config";
 import type { PreflightReport } from "@/lib/matters/types";
 import type { PopulationReport } from "@/lib/types";
 
@@ -40,7 +40,7 @@ function PopulationReportView({ report }: { report: PopulationReport }) {
       </p>
       {report.artifact_id && report.artifact_kind && (
         <a
-          href={`${API_BASE}/api/population-artifact/${report.artifact_id}?download=true`}
+          href={`${getApiBase()}/api/population-artifact/${report.artifact_id}?download=true`}
           className="inline-flex w-fit items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           Download filled form ({report.artifact_kind.toUpperCase()})

@@ -1,75 +1,29 @@
-"use client";
+import { MatterDetailView } from "@/components/matters/MatterDetailView";
 
-import Link from "next/link";
-import { useParams } from "next/navigation";
-
-import { MatterDocuments } from "@/components/matters/MatterDocuments";
-import { MatterRuns } from "@/components/matters/MatterRuns";
-import { StartWorkflow } from "@/components/matters/StartWorkflow";
-import { Banner } from "@/components/ui/Banner";
-import { Chip } from "@/components/ui/Chip";
-import { ApiError } from "@/lib/api";
-import { formatDate } from "@/lib/matters/format";
-import { useMatter, usePackages } from "@/lib/matters/queries";
-
-export default function MatterDetailPage() {
-  const params = useParams<{ id: string }>();
-  const matterId = params.id;
-  const detail = useMatter(matterId);
-  const packages = usePackages();
-
-  if (detail.isLoading) {
-    return <p className="text-sm text-ink-soft">Loading matter…</p>;
+/**
+ * Dynamic matter route (web/dev). Delegates to the shared MatterDetailView, the
+ * same component the desktop static twin (`/matter?id=`) renders.
+ *
+ * Static-export compatibility: a client page with an arbitrary dynamic segment
+ * cannot be statically exported. On web/dev this returns `[]` so ids resolve on
+ * demand. Under `output: export` Next forbids a dynamic route with zero params,
+ * so the desktop build emits a single inert sentinel page — the desktop app
+ * never links to path-style URLs (it uses the `/matter?id=` twin), so this page
+ * is dead weight, present only to satisfy the exporter. No `[id]` folder ends
+ * up in `out/`.
+ */
+export function generateStaticParams() {
+  if (process.env.NEXT_PUBLIC_DESKTOP === "1") {
+    return [{ id: "_" }];
   }
+  return [];
+}
 
-  if (detail.isError || !detail.data) {
-    return (
-      <div className="flex flex-col gap-4">
-        <Link href="/matters" className="text-sm text-accent-deep hover:underline">
-          ← Matters
-        </Link>
-        <Banner tone="danger">
-          {detail.error instanceof ApiError ? detail.error.message : "Could not load this matter."}
-        </Banner>
-      </div>
-    );
-  }
-
-  const { matter, documents, runs } = detail.data;
-  const pkgs = packages.data?.packages ?? [];
-
-  return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-3">
-        <Link href="/matters" className="w-fit text-sm text-accent-deep hover:underline">
-          ← Matters
-        </Link>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-display text-3xl tracking-tight">{matter.title}</h1>
-          <Chip tone={matter.status === "open" ? "accent" : "neutral"}>{matter.status}</Chip>
-        </div>
-        <p className="text-sm text-ink-soft">
-          <Chip tone="neutral">{matter.matter_type}</Chip>
-          <span className="ml-3">Opened {formatDate(matter.created_at)}</span>
-          {matter.client_ref && <span className="ml-3">Client ref: {matter.client_ref}</span>}
-        </p>
-      </div>
-
-      <MatterDocuments matterId={matter.id} documents={documents} />
-
-      <section className="flex flex-col gap-4">
-        <h2 className="font-display text-xl tracking-tight">Workflow runs</h2>
-        <MatterRuns matterId={matter.id} runs={runs} packages={pkgs} />
-      </section>
-
-      <section className="flex flex-col gap-4">
-        <h2 className="font-display text-xl tracking-tight">Start a workflow</h2>
-        {packages.isLoading ? (
-          <p className="text-sm text-ink-soft">Loading packages…</p>
-        ) : (
-          <StartWorkflow matter={matter} packages={pkgs} />
-        )}
-      </section>
-    </div>
-  );
+export default async function MatterDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <MatterDetailView matterId={id} />;
 }

@@ -9,6 +9,7 @@ import { Banner } from "@/components/ui/Banner";
 import { Button } from "@/components/ui/Button";
 import { ApiError } from "@/lib/api";
 import { launchKind, linkOutHref } from "@/lib/matters/packages";
+import { runHref } from "@/lib/nav";
 import { useStartMatterRun } from "@/lib/matters/queries";
 import type { Matter, PackageManifestSummary } from "@/lib/matters/types";
 
@@ -37,7 +38,7 @@ export function StartWorkflow({ matter, packages }: Props) {
     setError(null);
     try {
       const run = await startMatterRun.mutateAsync({ packageId: pkg.package_id });
-      router.push(`/matters/${matter.id}/runs/${run.id}`);
+      router.push(runHref(matter.id, run.id));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not start the workflow.");
     }

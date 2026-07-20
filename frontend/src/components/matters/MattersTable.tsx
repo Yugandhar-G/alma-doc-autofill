@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Chip, runStatusChip } from "@/components/ui/Chip";
 import { formatDate } from "@/lib/matters/format";
 import { useMatter } from "@/lib/matters/queries";
+import { matterHref } from "@/lib/nav";
 import type { Matter, RunStatus, WorkflowRun } from "@/lib/matters/types";
 
 const RUN_STATUS_ORDER: RunStatus[] = [
@@ -35,7 +36,7 @@ function MatterRow({ matter }: { matter: Matter }) {
   const detail = useMatter(matter.id);
   const runs = detail.data?.runs ?? [];
   const summary = summarizeRuns(runs);
-  const go = () => router.push(`/matters/${matter.id}`);
+  const go = () => router.push(matterHref(matter.id));
 
   return (
     <tr

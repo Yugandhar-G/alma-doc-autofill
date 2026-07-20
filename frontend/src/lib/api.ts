@@ -3,7 +3,7 @@
  * {success, data, error} envelope; failures surface as ApiError with a
  * user-facing message, never as silently-empty data.
  */
-import { API_BASE } from "./config";
+import { getApiBase, getApiConfig } from "./config";
 import { getSessionId } from "./telemetry";
 import type {
   ApiResponse,
@@ -24,7 +24,7 @@ export async function parseEnvelope<T>(res: Response): Promise<T> {
     body = (await res.json()) as ApiResponse<T>;
   } catch {
     throw new ApiError(
-      `The backend returned an unreadable response (HTTP ${res.status}). Is it running on ${API_BASE}?`,
+      `The backend returned an unreadable response (HTTP ${res.status}). Is it running on ${getApiBase()}?`,
     );
   }
   if (!body.success || body.data == null) {
@@ -34,16 +34,21 @@ export async function parseEnvelope<T>(res: Response): Promise<T> {
 }
 
 export async function request(path: string, init: RequestInit): Promise<Response> {
+  const { base, token } = getApiConfig();
   // The session id groups this tab's requests into one observability session.
-  const headers = {
+  // The bearer token is present only under the desktop shell, which binds the
+  // sidecar to a random loopback port and enforces this header; on the web it
+  // is null and no Authorization header is sent (behavior stays identical).
+  const headers: Record<string, string> = {
     ...(init.headers as Record<string, string> | undefined),
     "X-Session-Id": getSessionId(),
   };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
   try {
-    return await fetch(`${API_BASE}${path}`, { ...init, headers });
+    return await fetch(`${base}${path}`, { ...init, headers });
   } catch {
     throw new ApiError(
-      `Could not reach the backend at ${API_BASE}. Start it with \`make dev\` and try again.`,
+      `Could not reach the backend at ${base}. Start it with \`make dev\` and try again.`,
     );
   }
 }

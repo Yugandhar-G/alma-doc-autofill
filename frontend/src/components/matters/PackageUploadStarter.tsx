@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { ApiError } from "@/lib/api";
 import { startPackageRun } from "@/lib/matters/api";
 import { packageRunKeys } from "@/lib/matters/queries";
+import { runHref } from "@/lib/nav";
 import { validateFile, type FileKind } from "@/lib/fileValidation";
 
 /** One upload slot's local state — file + sniffed kind + hard error. */
@@ -79,7 +80,7 @@ export function PackageUploadStarter({ matterId, packageId, withCaseType, onCanc
       }
       // Carry the parked-review payload to the run view via the Query cache.
       queryClient.setQueryData(packageRunKeys.startPayload(runId), data);
-      router.push(`/matters/${matterId}/runs/${runId}?pkg=${packageId}`);
+      router.push(runHref(matterId, runId, packageId));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not start the run.");
     } finally {

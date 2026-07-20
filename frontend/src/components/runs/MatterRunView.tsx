@@ -8,6 +8,7 @@ import { StageChecklist, type StageState } from "@/components/runs/StageChecklis
 import { Banner } from "@/components/ui/Banner";
 import { RunStatusChip } from "@/components/ui/Chip";
 import { ApiError } from "@/lib/api";
+import { matterHref } from "@/lib/nav";
 import { useInbox, usePackages, useResumeRun, useRun } from "@/lib/matters/queries";
 import type { Interrupt, RunStatus, StageSummary, WorkflowRun } from "@/lib/matters/types";
 
@@ -56,7 +57,7 @@ export function MatterRunView({ matterId, runId }: Props) {
   if (runQuery.isError || !runQuery.data) {
     return (
       <div className="flex flex-col gap-4">
-        <Link href={`/matters/${matterId}`} className="text-sm text-accent-deep hover:underline">
+        <Link href={matterHref(matterId)} className="text-sm text-accent-deep hover:underline">
           ← Matter
         </Link>
         <Banner tone="danger">
@@ -85,7 +86,7 @@ export function MatterRunView({ matterId, runId }: Props) {
     <div className="flex flex-col gap-8 lg:flex-row">
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         <div className="flex flex-col gap-2">
-          <Link href={`/matters/${matterId}`} className="w-fit text-sm text-accent-deep hover:underline">
+          <Link href={matterHref(matterId)} className="w-fit text-sm text-accent-deep hover:underline">
             ← Matter
           </Link>
           <div className="flex flex-wrap items-center gap-3">

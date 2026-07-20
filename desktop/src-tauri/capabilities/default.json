@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Baseline capability for the main window. The app talks to the local sidecar over plain fetch (no Tauri command bridge needed), so only core window permissions are granted. Keep this minimal — every added permission widens the webview's authority.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

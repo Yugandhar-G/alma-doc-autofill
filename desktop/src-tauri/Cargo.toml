@@ -1,0 +1,23 @@
+[package]
+name = "yunaki-desktop"
+version = "0.1.0"
+description = "Yunaki desktop shell (Tauri 2)"
+authors = ["Yunaki"]
+edition = "2021"
+rust-version = "1.77"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4"] }
+# Loopback-only readiness polling; no TLS needed (http to 127.0.0.1), so the
+# default rustls stack is disabled to keep the dependency tree small.
+ureq = { version = "2", default-features = false }
+
+[features]
+# Kept for parity with the tauri-cli scaffold; no custom features yet.
+default = []

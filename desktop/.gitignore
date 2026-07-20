@@ -1,0 +1,8 @@
+# PyInstaller sidecar output
+/dist/
+/build/
+
+# Rust / Tauri build output
+/src-tauri/target/
+/src-tauri/gen/
+/src-tauri/Cargo.lock

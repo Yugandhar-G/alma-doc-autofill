@@ -1,30 +1,30 @@
-"use client";
-
 import { Suspense } from "react";
-import { useParams, useSearchParams } from "next/navigation";
 
-import { MatterRunView } from "@/components/runs/MatterRunView";
-import { PackageRunView } from "@/components/runs/PackageRunView";
-import { launchKind } from "@/lib/matters/packages";
+import { RunRouter } from "@/components/runs/RunRouter";
 
-function RunViewSwitch() {
-  const params = useParams<{ id: string; runId: string }>();
-  const searchParams = useSearchParams();
-  const pkg = searchParams.get("pkg");
-
-  // A `pkg` query param marks a self-routed run (autofill/preflight), whose
-  // status/resume go through the package router. Everything else is a
-  // matter-store run reached via /api/runs/{id}.
-  if (pkg && launchKind(pkg) === "package_upload") {
-    return <PackageRunView matterId={params.id} packageId={pkg} runId={params.runId} />;
+/**
+ * Dynamic run route (web/dev). Delegates to the shared RunRouter, the same
+ * component the desktop static twin (`/run?...`) renders. See the sibling
+ * matter route for why the desktop build emits a single inert sentinel while
+ * web/dev returns `[]` (ids resolve on demand). No `[id]`/`[runId]` folder ends
+ * up in `out/`.
+ */
+export function generateStaticParams() {
+  if (process.env.NEXT_PUBLIC_DESKTOP === "1") {
+    return [{ id: "_", runId: "_" }];
   }
-  return <MatterRunView matterId={params.id} runId={params.runId} />;
+  return [];
 }
 
-export default function RunPage() {
+export default async function RunPage({
+  params,
+}: {
+  params: Promise<{ id: string; runId: string }>;
+}) {
+  const { id, runId } = await params;
   return (
     <Suspense fallback={<p className="text-sm text-ink-soft">Loading run…</p>}>
-      <RunViewSwitch />
+      <RunRouter matterId={id} runId={runId} />
     </Suspense>
   );
 }

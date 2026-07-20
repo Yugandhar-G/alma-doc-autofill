@@ -7,6 +7,7 @@ import { Banner } from "@/components/ui/Banner";
 import { Button } from "@/components/ui/Button";
 import { ApiError } from "@/lib/api";
 import { useCreateMatter } from "@/lib/matters/queries";
+import { matterHref } from "@/lib/nav";
 import type { PackageManifestSummary } from "@/lib/matters/types";
 
 type Props = {
@@ -53,7 +54,7 @@ export function NewMatterForm({ packages }: Props) {
       });
       reset();
       setIsOpen(false);
-      router.push(`/matters/${matter.id}`);
+      router.push(matterHref(matter.id));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create the matter.");
     }

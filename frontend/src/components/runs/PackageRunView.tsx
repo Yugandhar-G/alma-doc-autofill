@@ -11,6 +11,7 @@ import { Banner } from "@/components/ui/Banner";
 import { ApiError } from "@/lib/api";
 import { resumeAutofillRun, resumePreflightRun } from "@/lib/matters/api";
 import { packageInterruptKind } from "@/lib/matters/packages";
+import { matterHref } from "@/lib/nav";
 import { packageRunKeys, usePackageRun, usePackages } from "@/lib/matters/queries";
 import type { PreflightFinding, StageSummary } from "@/lib/matters/types";
 import type { G28Data, PassportData } from "@/lib/types";
@@ -131,7 +132,7 @@ export function PackageRunView({ matterId, packageId, runId }: Props) {
 function RunHeader({ matterId, title }: { matterId: string; title: string }) {
   return (
     <div className="flex flex-col gap-2">
-      <Link href={`/matters/${matterId}`} className="w-fit text-sm text-accent-deep hover:underline">
+      <Link href={matterHref(matterId)} className="w-fit text-sm text-accent-deep hover:underline">
         ← Matter
       </Link>
       <h1 className="font-display text-3xl tracking-tight">{title}</h1>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { RunStatusChip } from "@/components/ui/Chip";
 import { formatDateTime } from "@/lib/matters/format";
+import { runHref } from "@/lib/nav";
 import type { PackageManifestSummary, WorkflowRun } from "@/lib/matters/types";
 
 type Props = {
@@ -39,7 +40,7 @@ export function MatterRuns({ matterId, runs, packages }: Props) {
         <li key={run.id}>
           <button
             type="button"
-            onClick={() => router.push(`/matters/${matterId}/runs/${run.id}`)}
+            onClick={() => router.push(runHref(matterId, run.id))}
             className="flex w-full items-center justify-between gap-4 px-5 py-3.5 text-left transition-colors hover:bg-accent-wash/40 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
           >
             <div className="min-w-0">

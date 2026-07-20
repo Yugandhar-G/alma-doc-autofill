@@ -5,7 +5,7 @@
  * PII policy: events carry step names, document types, counts, and booleans.
  * Never file names, extracted values, or free-form user input.
  */
-import { API_BASE } from "./config";
+import { getApiBase } from "./config";
 
 const SESSION_KEY = "yunaki-session-id";
 
@@ -28,7 +28,7 @@ export function trackEvent(
   metadata: Record<string, TelemetryValue> = {},
 ): void {
   if (typeof window === "undefined") return;
-  void fetch(`${API_BASE}/api/telemetry`, {
+  void fetch(`${getApiBase()}/api/telemetry`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, session_id: getSessionId(), metadata }),

@@ -2,7 +2,7 @@
 
 import { Banner } from "@/components/ui/Banner";
 import { Button } from "@/components/ui/Button";
-import { API_BASE, HUMAN_NOTE } from "@/lib/config";
+import { getApiBase, HUMAN_NOTE } from "@/lib/config";
 import type { PopulationEntry, PopulationReport } from "@/lib/types";
 
 type Props = {
@@ -175,7 +175,7 @@ export function ReportStage({ report, onBackToReview, onRestart }: Props) {
             <>
               <a
                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-line-strong bg-surface px-5 py-2.5 text-sm font-medium text-ink transition-colors duration-150 hover:border-accent hover:text-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                href={`${API_BASE}/api/population-artifact/${report.artifact_id}`}
+                href={`${getApiBase()}/api/population-artifact/${report.artifact_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -183,7 +183,7 @@ export function ReportStage({ report, onBackToReview, onRestart }: Props) {
               </a>
               <a
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                href={`${API_BASE}/api/population-artifact/${report.artifact_id}?download=1`}
+                href={`${getApiBase()}/api/population-artifact/${report.artifact_id}?download=1`}
               >
                 Download ({report.artifact_kind === "png" ? "image" : "PDF"})
               </a>
