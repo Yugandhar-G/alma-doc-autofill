@@ -125,15 +125,34 @@ def ask_for_fields_blocks(parsing_available: bool) -> list[dict[str, Any]]:
 # Approval
 # --------------------------------------------------------------------------- #
 
+# WhatsApp is mocked this week (workplan §3.4 / §2 out-of-scope): drafts of this
+# kind render in the approval post but never hit a real WhatsApp Business API.
+# The badge makes that explicit to the approver so no one assumes it will send.
+WHATSAPP_BADGE = "📱 WhatsApp (mocked this week — renders only, never sends)"
+
+
 def approval_blocks(draft: DraftAction) -> list[dict[str, Any]]:
-    """Draft body + grounding + [Approve] [Edit] [Reject]."""
+    """Draft body + grounding + [Approve] [Edit] [Reject].
+
+    WhatsApp-kind drafts carry a badge line (§3.4): the channel is mocked this
+    week, so the approver must never assume an approval reaches WhatsApp.
+    """
     blocks: list[dict[str, Any]] = [
         {
             "type": "section",
             "text": {"type": "mrkdwn", "text": f"*{trigger_line(draft)}*"},
         },
-        {"type": "section", "text": {"type": "mrkdwn", "text": draft.body}},
     ]
+    if draft.kind == "client_whatsapp":
+        blocks.append(
+            {
+                "type": "context",
+                "elements": [{"type": "mrkdwn", "text": WHATSAPP_BADGE}],
+            }
+        )
+    blocks.append(
+        {"type": "section", "text": {"type": "mrkdwn", "text": draft.body}}
+    )
     if draft.grounding.missing_items:
         blocks.append(
             {
@@ -208,6 +227,32 @@ def approval_error_blocks(status_line: str) -> list[dict[str, Any]]:
     return [
         {"type": "section", "text": {"type": "mrkdwn", "text": "*⚠️ Approval failed*"}},
         {"type": "context", "elements": [{"type": "mrkdwn", "text": status_line}]},
+    ]
+
+
+# --------------------------------------------------------------------------- #
+# Intake completeness notification ("validate → if yes → tell the caseworker")
+# --------------------------------------------------------------------------- #
+
+def intake_complete_blocks(case_name: str, caseworker: str) -> list[dict[str, Any]]:
+    """Notify the caseworker in-thread that all mandatory intake items are in.
+
+    Fired only on intake.validated with complete=true (the incomplete path is
+    handled by the draft.created chase flow). The caseworker is named in plain
+    text — no hardcoded Slack user id is ever emitted (§2.4).
+    """
+    return [
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    "*✅ Intake complete — all mandatory items in*\n"
+                    f"*Case:* {case_name}\n"
+                    f"{caseworker} — ready for your review."
+                ),
+            },
+        }
     ]
 
 

@@ -200,6 +200,8 @@ def _register(
     app._yunaki_router = EventRouter(  # stash so run() can start it
         conn,
         {"draft.created": on_draft_created, "escalation.raised": on_escalation},
+        client=app.client,  # enables the router's intake.validated notify path
+        fallback_channel=fallback,
     )
 
 

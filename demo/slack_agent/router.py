@@ -24,16 +24,24 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import sqlite3
-from typing import Awaitable, Callable
+from typing import Any, Awaitable, Callable
 
 from core import events
 from core.models import Event
-from slack_agent import threads
+from slack_agent import blocks, threads
 
 logger = logging.getLogger("slack_agent.router")
 
 Handler = Callable[[Event], Awaitable[None]]
+
+# Env read inline as a module constant: core.config is frozen and slack_agent's
+# settings.py is outside this change's edit scope, so the caseworker handle used
+# in the completeness notification is read directly from the environment here.
+# No hardcoded Slack user id (§2.4) — a plain-text mention only; falls back to
+# "Isaiah" (the design-partner paralegal) when SLACK_CASEWORKER_HANDLE is unset.
+CASEWORKER_HANDLE = os.environ.get("SLACK_CASEWORKER_HANDLE") or "Isaiah"
 
 
 class EventRouter:
@@ -43,13 +51,27 @@ class EventRouter:
         handlers: dict[str, Handler],
         *,
         poll_interval: float = 2.0,
+        client: Any | None = None,
+        fallback_channel: str | None = None,
     ) -> None:
         self.conn = conn
-        self.handlers = handlers
+        # Copy so we can extend with router-owned handlers without mutating the
+        # caller's dict.
+        self.handlers = dict(handlers)
         self.poll_interval = poll_interval
+        self.client = client
+        self.fallback_channel = fallback_channel
         self.queue: asyncio.Queue[Event] = asyncio.Queue()
         self.loop: asyncio.AbstractEventLoop | None = None
         self._tasks: list[asyncio.Task] = []
+        # Completeness notification (§2 "validate → if yes → tell Isaiah"): the
+        # router owns this intake.validated handler itself so it rides the SAME
+        # dual pubsub+poller dedupe path as draft.created. It needs a Slack
+        # client to post; when none is supplied (e.g. a handlers-only unit
+        # router) the subscription is simply not registered. Never clobbers a
+        # caller-supplied intake.validated handler.
+        if client is not None:
+            self.handlers.setdefault("intake.validated", self._on_intake_validated)
 
     # -- enqueue (thread-safe) --------------------------------------------- #
 
@@ -107,6 +129,42 @@ class EventRouter:
             await handler(event)
         except Exception:  # noqa: BLE001 - one bad event must not kill the loop
             logger.exception("handler failed for event %s (%s)", event.id, event.type)
+
+    # -- router-owned handlers --------------------------------------------- #
+
+    def _case_name(self, case_id: str) -> str:
+        row = self.conn.execute(
+            'SELECT name FROM "case" WHERE id = ?', (case_id,)
+        ).fetchone()
+        return row["name"] if row else case_id
+
+    async def _on_intake_validated(self, event: Event) -> None:
+        """Post the completeness notification when intake validation says done.
+
+        complete=true  → post "✅ Intake complete …" into the case thread (or the
+                          cases channel when the case is unmapped), mentioning the
+                          caseworker in plain text.
+        complete=false → nothing: the draft.created chase flow already owns the
+                          "here's what's still missing" message. The event is
+                          still claimed in dispatch(), so dedupe holds either way.
+        """
+        if not event.payload.get("complete"):
+            return
+        case_id = event.case_id or ""
+        mapping = threads.get_thread(self.conn, case_id)
+        if mapping:
+            channel, thread_ts = mapping["channel"], mapping["thread_ts"]
+        else:
+            channel, thread_ts = self.fallback_channel, None
+        await self.client.chat_postMessage(
+            channel=channel,
+            thread_ts=thread_ts,
+            blocks=blocks.intake_complete_blocks(
+                self._case_name(case_id), CASEWORKER_HANDLE
+            ),
+            text="Intake complete — all mandatory items in",
+        )
+        logger.info("posted completeness notification for case=%s", case_id)
 
     # -- lifecycle --------------------------------------------------------- #
 
