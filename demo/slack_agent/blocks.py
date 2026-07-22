@@ -82,6 +82,28 @@ def handoff_summary_blocks(
     return blocks
 
 
+def ask_questions_blocks(questions: list[str]) -> list[dict[str, Any]]:
+    """Reply when the agent asks in-thread instead of creating a case.
+
+    Renders the agent's OWN questions verbatim when it supplied any; otherwise
+    (a no-terminal/budget fallback) posts the generic ask. Never invents fields.
+    """
+    if not questions:
+        return ask_for_fields_blocks(True)
+    return [
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    "I couldn't open a case from that message without guessing. "
+                    "Reply with:\n" + _bullet_list(questions)
+                ),
+            },
+        }
+    ]
+
+
 def ask_for_fields_blocks(parsing_available: bool) -> list[dict[str, Any]]:
     """Reply when nothing could be parsed. Never invents fields."""
     if parsing_available:
@@ -174,6 +196,19 @@ def approved_blocks(draft: DraftAction) -> list[dict[str, Any]]:
 def rejected_blocks(draft: DraftAction, reason: str | None) -> list[dict[str, Any]]:
     tail = f" — {reason}" if reason else ""
     return _status_blocks(draft, f"🚫 Rejected{tail}")
+
+
+def approval_error_blocks(status_line: str) -> list[dict[str, Any]]:
+    """Visible failure surface for the async approval task (§2.8).
+
+    A background send failure must never be silent: the task logs loudly AND
+    updates the Slack message with this block. status_line must carry no PII —
+    the caller passes an error class name, not raw exception text.
+    """
+    return [
+        {"type": "section", "text": {"type": "mrkdwn", "text": "*⚠️ Approval failed*"}},
+        {"type": "context", "elements": [{"type": "mrkdwn", "text": status_line}]},
+    ]
 
 
 # --------------------------------------------------------------------------- #

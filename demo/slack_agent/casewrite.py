@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from core.models import Case, Client, Intake, Party
-from slack_agent.handoff_parser import HandoffParse
+from slack_agent.handoff_agent import HandoffParse
 
 _INITIAL_STAGE = "Handoff received — intake pending"
 

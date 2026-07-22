@@ -11,9 +11,10 @@ posts (the control surface) are made directly and are allowed (§4).
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import sqlite3
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 from core import drafts, sendgate
 from core.events import emit
@@ -21,6 +22,8 @@ from core.models import Event
 from slack_agent import blocks, senders, threads
 
 logger = logging.getLogger("slack_agent.approvals")
+
+AckFn = Callable[[], Awaitable[None]]
 
 
 async def post_approval(
@@ -43,34 +46,90 @@ async def post_approval(
 
 
 async def approve(
-    conn: sqlite3.Connection, client: Any, draft_id: str, *, channel: str, message_ts: str
+    conn: sqlite3.Connection,
+    client: Any,
+    draft_id: str,
+    *,
+    channel: str,
+    message_ts: str,
+    ack: AckFn | None = None,
+) -> "asyncio.Task[dict[str, Any]]":
+    """Ack Slack immediately (<3s, always), then run the send OFF the ack path.
+
+    Latency contract §2.8: the acknowledgement must return within 3s regardless
+    of how slow the send is, so the actual work (draft state change → sendgate
+    execute → event → Slack message update) runs in a background asyncio task.
+
+    In production main.py already awaits ack() before calling us and ignores the
+    returned task — the work continues on the Bolt loop. When an `ack` callable
+    is passed (tests, or a future direct-handler wiring) we ack here first. The
+    returned Task lets a caller await completion; awaiting is never required.
+    """
+    if ack is not None:
+        await ack()
+    return asyncio.create_task(
+        _run_approval_work(
+            conn, client, draft_id, channel=channel, message_ts=message_ts
+        )
+    )
+
+
+async def _run_approval_work(
+    conn: sqlite3.Connection,
+    client: Any,
+    draft_id: str,
+    *,
+    channel: str,
+    message_ts: str,
 ) -> dict[str, Any]:
-    """Approve → emit draft.approved → execute through the LIVE_MODE gate."""
-    drafts.approve_draft(conn, draft_id)
-    emit(
-        conn,
-        Event(
-            type="draft.approved",
-            case_id=_case_id(conn, draft_id),
-            actor="human:paralegal",
-            payload={"draft_id": draft_id},
-        ),
-    )
-    draft = drafts.get_draft(conn, draft_id)
-    # Resolve the real-world send for this kind; fall back to the no-op
-    # placeholder (never invoked under LIVE_MODE=false). §4.1: execute_draft is
-    # still the single gate — the registry only decides WHICH callable it holds.
-    sender = senders.get_sender(draft.kind) or senders.noop_sender
-    result = sendgate.execute_draft(conn, draft_id, sender, actor="agent:slack")
-    draft = drafts.get_draft(conn, draft_id)
-    await client.chat_update(
-        channel=channel,
-        ts=message_ts,
-        blocks=blocks.approved_blocks(draft),
-        text="Draft approved",
-    )
-    logger.info("approved draft=%s mocked=%s", draft_id, result.get("mocked"))
-    return result
+    """The real approval work, run in the background task. Failures NEVER go
+    silent (§2.8): they log loudly AND surface a visible error line in Slack."""
+    try:
+        # §4.2 ordering: the approve state change commits BEFORE execute_draft
+        # (execute_draft itself refuses any draft not in state 'approved').
+        drafts.approve_draft(conn, draft_id)
+        emit(
+            conn,
+            Event(
+                type="draft.approved",
+                case_id=_case_id(conn, draft_id),
+                actor="human:paralegal",
+                payload={"draft_id": draft_id},
+            ),
+        )
+        draft = drafts.get_draft(conn, draft_id)
+        # Resolve the real-world send for this kind; fall back to the no-op
+        # placeholder (never invoked under LIVE_MODE=false). §4.1: execute_draft
+        # is still the single gate — the registry only decides WHICH callable.
+        sender = senders.get_sender(draft.kind) or senders.noop_sender
+        result = sendgate.execute_draft(conn, draft_id, sender, actor="agent:slack")
+        draft = drafts.get_draft(conn, draft_id)
+        await client.chat_update(
+            channel=channel,
+            ts=message_ts,
+            blocks=blocks.approved_blocks(draft),
+            text="Draft approved",
+        )
+        logger.info("approved draft=%s mocked=%s", draft_id, result.get("mocked"))
+        return result
+    except Exception as exc:  # noqa: BLE001 - fail loud + visible, never silent (§2.8)
+        logger.exception("approval work FAILED for draft=%s", draft_id)
+        status = (
+            f"Could not complete the send: {type(exc).__name__}. See agent logs."
+        )
+        try:
+            await client.chat_update(
+                channel=channel,
+                ts=message_ts,
+                blocks=blocks.approval_error_blocks(status),
+                text="Approval failed",
+            )
+        except Exception:  # noqa: BLE001 - the loud log above is the last resort
+            logger.exception(
+                "also failed to surface approval error to Slack for draft=%s",
+                draft_id,
+            )
+        return {"error": type(exc).__name__, "draft_id": draft_id}
 
 
 async def open_reject_modal(

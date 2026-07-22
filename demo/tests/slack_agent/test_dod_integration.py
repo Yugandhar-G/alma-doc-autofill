@@ -15,13 +15,34 @@ from core.models import DraftAction, DraftGrounding, DraftTo, Event
 from slack_agent import approvals, listener
 from slack_agent.router import EventRouter
 
-from tests.slack_agent.conftest import RAVI_MEI, make_parser
+from tests.slack_agent.conftest import approve_and_wait
+
+_RAVI = "ravi.kumar.demo@example.com"
+_MEI = "mei.lin.demo@example.com"
+
+_HANDOFF_SCRIPT = [
+    ("find_existing_client", {"email": _RAVI}),
+    ("find_existing_client", {"email": _MEI}),
+    (
+        "create_case_record",
+        {
+            "process_type": "I-130 and I-485 One Step Marriage Based Green Cards",
+            "case_name": "Ravi Kumar / Mei Lin",
+            "parties": [
+                {"role": "petitioner", "first_name": "Ravi", "last_name": "Kumar", "email": _RAVI},
+                {"role": "beneficiary", "first_name": "Mei", "last_name": "Lin", "email": _MEI},
+            ],
+        },
+    ),
+]
 
 
-def test_full_dod_chain(db, slack, run, monkeypatch):
+def test_full_dod_chain(db, slack, run, wire_agent, monkeypatch):
     monkeypatch.setenv("LIVE_MODE", "false")
 
-    # 1. Simulated handoff message → case + parties + intakes.
+    # 1. Simulated handoff message worked by the kernel agent (scripted loop)
+    #    → case + parties + intakes.
+    wire_agent(_HANDOFF_SCRIPT)
     case_id = run(
         listener.handle_handoff_message(
             conn=db,
@@ -29,7 +50,6 @@ def test_full_dod_chain(db, slack, run, monkeypatch):
             channel="C_CASES",
             message_ts="1000.1",
             text="New marriage case, adjustment of status. Ravi + spouse Mei",
-            parse=make_parser(RAVI_MEI),
         )
     )
     assert case_id is not None
@@ -81,8 +101,8 @@ def test_full_dod_chain(db, slack, run, monkeypatch):
     approval_posts = [p for p in slack.posts if p.get("thread_ts") == "1000.1"]
     assert approval_posts, "approval block should land in the case thread"
 
-    # 4. Simulated Approve action.
-    result = run(approvals.approve(db, slack, draft.id, channel="C_CASES", message_ts="1001.0"))
+    # 4. Simulated Approve action (acks immediately, work runs async → awaited).
+    result = approve_and_wait(db, slack, draft.id, channel="C_CASES", message_ts="1001.0")
     assert result["mocked"] is True
     assert drafts.get_draft(db, draft.id).state == "sent"
 
