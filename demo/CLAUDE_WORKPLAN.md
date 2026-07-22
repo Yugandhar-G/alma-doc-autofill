@@ -48,6 +48,7 @@ draft.rejected             # A produces — payload: {reason}
 message.sent               # infra produces after approved draft executes
 followup.due               # B produces (timer fired)
 escalation.raised          # B produces → A must surface it in Slack
+email.received             # A produces (Gmail push; added Jul 22 scope change — pending Nanda ack)
 ```
 
 ### 1.2 DraftAction (the only path to any outbound message)
@@ -84,9 +85,17 @@ Seed data: ONE fictional marriage case ("Ravi Kumar" petitioner / "Mei Lin" bene
 SLACK_BOT_TOKEN=            # A
 SLACK_APP_TOKEN=            # A (socket mode)
 SLACK_CHANNEL_CASES=        # A — the demo workspace channel
-ANTHROPIC_API_KEY=          # B (draft wording only)
+ANTHROPIC_API_KEY=          # A (email triage/handoff parse) + B (draft wording)
 LIVE_MODE=false             # global guardrail, see §4.1
 DB_PATH=./yunaki.db
+
+# Gmail agent (A — added Jul 22 scope change, pending Nanda ack)
+GMAIL_ADDRESS=                    # the DEMO mailbox (never the firm's)
+GMAIL_CREDENTIALS_PATH=.secrets/gmail_credentials.json
+GMAIL_TOKEN_PATH=.secrets/gmail_token.json
+GMAIL_TOPIC=                      # projects/<gcp>/topics/<topic>
+GMAIL_PUBSUB_SUBSCRIPTION=        # projects/<gcp>/subscriptions/<sub> (streaming pull)
+GOOGLE_APPLICATION_CREDENTIALS=   # ADC key for the Pub/Sub subscriber
 ```
 
 ### 1.5 Directory ownership (disjoint — per working principles §3)
@@ -168,4 +177,6 @@ The agent that does Isaiah's chasing for him: verifies intake completeness the m
 
 ## 6. What is explicitly OUT of scope this week
 
-eImmigration/MyCase integration (mirror manually-seeded data only) · real WhatsApp API · Gmail API sending (drafts render, nothing emails) · the approval web UI (Slack IS the approval surface) · form auto-fill · inbox triage of info@ · production auth/multi-tenancy. Anything on this list appearing in a plan = scope creep; flag it.
+eImmigration/MyCase integration (mirror manually-seeded data only) · real WhatsApp API · the approval web UI (Slack IS the approval surface) · form auto-fill · inbox triage of the firm's real info@ · production auth/multi-tenancy. Anything on this list appearing in a plan = scope creep; flag it.
+
+**Scope change (Jul 22, Yugandhar):** Gmail API is now IN scope for Workstream A — the real always-on email agent: Gmail watch() → Pub/Sub topic → streaming-pull consumer (no public URL) → LLM triage → DraftAction → Slack approval buttons → on approve, real send via Gmail API (gmail.send OAuth) gated by LIVE_MODE. Demo mailbox only, never the firm's. Contract deltas (email.received event type, Gmail env vars) pending Nanda ack.

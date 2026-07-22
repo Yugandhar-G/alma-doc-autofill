@@ -31,6 +31,7 @@ EventType = Literal[
     "message.sent",            # infra produces after approved draft executes
     "followup.due",            # B produces (timer fired)
     "escalation.raised",       # B produces → A must surface it in Slack
+    "email.received",          # A produces (Gmail push; Jul 22 scope change, pending Nanda ack)
 ]
 EVENT_TYPES: tuple[str, ...] = get_args(EventType)
 
