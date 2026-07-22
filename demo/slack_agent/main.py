@@ -21,7 +21,15 @@ import sys
 from core import drafts
 from core.db import connect_and_init
 from core.models import Event
-from slack_agent import approvals, escalations, listener, senders, status_command, threads
+from slack_agent import (
+    approvals,
+    escalations,
+    listener,
+    mention,
+    senders,
+    status_command,
+    threads,
+)
 from slack_agent.router import EventRouter
 from slack_agent.settings import MissingConfig, Settings, load
 
@@ -41,20 +49,35 @@ def _open_db() -> sqlite3.Connection:
     return conn
 
 
-def _register(app, conn: sqlite3.Connection, settings: Settings) -> None:
+def _register(
+    app, conn: sqlite3.Connection, settings: Settings, bot_user_id: str | None
+) -> None:
     from slack_agent.blocks import trigger_line  # noqa: F401 (keeps import local)
 
     fallback = settings.channel_cases
 
     @app.event("message")
     async def _on_message(event, client, logger):  # noqa: ANN001
-        if not listener.should_handle(event, settings.channel_cases):
+        if not listener.should_handle(event, settings.channel_cases, bot_user_id):
             return
         await listener.handle_handoff_message(
             conn=conn,
             client=client,
             channel=event["channel"],
             message_ts=event["ts"],
+            text=event.get("text", ""),
+        )
+
+    @app.event("app_mention")
+    async def _on_mention(event, client):  # noqa: ANN001
+        if not mention.should_handle_mention(event):
+            return
+        await mention.handle_mention(
+            conn=conn,
+            client=client,
+            channel=event["channel"],
+            message_ts=event["ts"],
+            thread_ts=event.get("thread_ts"),
             text=event.get("text", ""),
         )
 
@@ -205,7 +228,12 @@ async def _run(settings: Settings) -> None:
 
     conn = _open_db()
     app = AsyncApp(token=settings.bot_token)
-    _register(app, conn, settings)
+    try:
+        bot_user_id = (await app.client.auth_test())["user_id"]
+    except Exception:  # noqa: BLE001 - degrade: mention/handoff overlap filter off
+        logger.exception("auth_test failed; handoff listener won't filter mentions")
+        bot_user_id = None
+    _register(app, conn, settings, bot_user_id)
     _register_gmail_sender()
 
     router: EventRouter = app._yunaki_router

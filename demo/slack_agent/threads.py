@@ -83,6 +83,21 @@ def get_thread(conn: sqlite3.Connection, case_id: str) -> dict[str, str] | None:
     return {"channel": row["channel"], "thread_ts": row["thread_ts"]}
 
 
+def get_case_by_thread(
+    conn: sqlite3.Connection, channel: str, thread_ts: str
+) -> str | None:
+    """Reverse lookup: which case does this Slack thread belong to?
+
+    Used by the mention agent so "@yunaki ..." inside a handoff thread is
+    automatically scoped to that thread's case without the human naming it.
+    """
+    row = conn.execute(
+        "SELECT case_id FROM slack_thread WHERE channel = ? AND thread_ts = ?",
+        (channel, thread_ts),
+    ).fetchone()
+    return row["case_id"] if row else None
+
+
 # --------------------------------------------------------------------------- #
 # Dedup ledger — the seam between the in-process pubsub and the poller
 # --------------------------------------------------------------------------- #

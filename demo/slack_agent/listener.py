@@ -26,7 +26,9 @@ logger = logging.getLogger("slack_agent.listener")
 ParseFn = Callable[[str], Awaitable[HandoffParse]]
 
 
-def should_handle(event: dict[str, Any], channel_cases: str) -> bool:
+def should_handle(
+    event: dict[str, Any], channel_cases: str, bot_user_id: str | None = None
+) -> bool:
     """True only for a human top-level post in the cases channel."""
     if event.get("channel") != channel_cases:
         return False
@@ -36,8 +38,11 @@ def should_handle(event: dict[str, Any], channel_cases: str) -> bool:
     ts = event.get("ts")
     if thread_ts and thread_ts != ts:
         return False  # a reply inside a thread, not a new handoff
-    if not (event.get("text") or "").strip():
+    text = event.get("text") or ""
+    if not text.strip():
         return False
+    if bot_user_id and f"<@{bot_user_id}>" in text:
+        return False  # "@yunaki ..." is a mention-agent ask, not a case handoff
     return True
 
 

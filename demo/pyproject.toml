@@ -13,13 +13,27 @@ dependencies = [
     "slack-bolt>=1.18",
     "aiohttp>=3.9",
     "anthropic>=0.40",
+    "deepagents>=0.6",
+    "langchain-anthropic>=0.3",
+    "google-api-python-client>=2.100",
+    "google-auth-oauthlib>=1.2",
+    "google-auth>=2.23",
+    "google-cloud-pubsub>=2.18",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+# The email-agent brain runs on the yunaki kernel deep-agent engine (deepagents +
+# langchain-google-genai on Gemini), which lives in the sibling backend package
+# and requires Python >=3.11. It is a PATH dependency installed editable, NOT a
+# PyPI package, so it is documented as a command rather than pinned here (a
+# machine-specific file:// URL would break `pip install -e .` elsewhere):
+#   pip install -e ../backend            # full engine, needs Python >=3.11
+#   pip install -e ../backend --no-deps --ignore-requires-python   # imports only
+# See README.md and docs/gmail-agent-setup.md.
 
 [tool.setuptools]
-packages = ["core", "seed", "scripts"]
+packages = ["core", "seed", "scripts", "gmail_agent", "agents"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

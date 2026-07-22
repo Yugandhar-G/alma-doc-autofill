@@ -12,6 +12,8 @@ import os
 from dotenv import load_dotenv
 
 # §1.4 — the single set of config variables both workstreams share.
+# Gmail block added by the Jul 22 scope change (same amendment that added
+# email.received to the event enum; pending Nanda ack, tracked in workplan §6).
 CONFIG_VARS: tuple[str, ...] = (
     "SLACK_BOT_TOKEN",
     "SLACK_APP_TOKEN",
@@ -19,6 +21,12 @@ CONFIG_VARS: tuple[str, ...] = (
     "ANTHROPIC_API_KEY",
     "LIVE_MODE",
     "DB_PATH",
+    "GMAIL_ADDRESS",
+    "GMAIL_CREDENTIALS_PATH",
+    "GMAIL_TOKEN_PATH",
+    "GMAIL_TOPIC",
+    "GMAIL_PUBSUB_SUBSCRIPTION",
+    "GOOGLE_APPLICATION_CREDENTIALS",
 )
 
 _DEFAULT_DB_PATH = "./yunaki.db"
