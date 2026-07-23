@@ -62,7 +62,10 @@ class AgentBudget:
     counts model responses (a turn may carry several tool calls)."""
 
     max_tool_calls: int = 10
-    max_turns: int = 8
+    # 12, not 8: a create-case flow legitimately spends turns on create ->
+    # draft -> reply, and an honest error string costs a retry turn. The
+    # recursion limit stays the hard stop for runaway loops.
+    max_turns: int = 12
 
 
 @dataclass

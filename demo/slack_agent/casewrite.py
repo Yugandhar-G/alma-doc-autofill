@@ -63,8 +63,15 @@ def create_handoff_case(conn: sqlite3.Connection, parsed: HandoffParse) -> Hando
     now = _now_iso()
     process_type = parsed.process_type or ""
 
-    first_names = [p.first_name for p in parsed.parties if p.first_name]
-    case_name = " / ".join(first_names) if first_names else "New case"
+    # Full names, not first names: "Ravi Kumar / Mei Lin" (the seed's
+    # convention). First-name-only case names collide on fuzzy lookup the
+    # moment two cases share a first name.
+    full_names = [
+        _display_name(p.first_name, p.last_name)
+        for p in parsed.parties
+        if p.first_name or p.last_name
+    ]
+    case_name = " / ".join(full_names) if full_names else "New case"
 
     case = Case(name=case_name, process_type=process_type, stage=_INITIAL_STAGE)
     conn.execute(

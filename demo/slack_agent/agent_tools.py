@@ -169,13 +169,30 @@ class ToolDeps:
 
 
 def _resolve_case(conn: sqlite3.Connection, query: str) -> sqlite3.Row | str:
-    """Fuzzy-match a case; a string result is the model-facing error."""
-    matches = status_command._match_cases(conn, query)
+    """Resolve a case; a string result is the model-facing error.
+
+    Resolution order: exact case id (`case_…`, what create_case hands back) →
+    exact full-name match (case-insensitive) → fuzzy substring. Exact wins
+    BEFORE ambiguity is declared, so 'Yugandhar Gopu' resolves even while
+    'yugandhar onboarding' also exists."""
+    q = (query or "").strip()
+    if q.startswith("case_"):
+        row = conn.execute('SELECT * FROM "case" WHERE id = ?', (q,)).fetchone()
+        return row if row is not None else f"NO_MATCH: no case with id '{q}'."
+    exact = conn.execute(
+        'SELECT * FROM "case" WHERE lower(name) = ?', (q.lower(),)
+    ).fetchall()
+    if len(exact) == 1:
+        return exact[0]
+    matches = status_command._match_cases(conn, q)
     if not matches:
-        return f"NO_MATCH: no case on file matches '{query.strip()}'."
+        return f"NO_MATCH: no case on file matches '{q}'."
     if len(matches) > 1:
         names = "; ".join(row["name"] for row in matches)
-        return f"AMBIGUOUS: multiple cases match '{query.strip()}': {names}. Be more specific."
+        return (
+            f"AMBIGUOUS: multiple cases match '{q}': {names}. Pass the exact "
+            "case name, or the case id if a tool gave you one."
+        )
     return matches[0]
 
 
@@ -325,6 +342,19 @@ def _create_email_draft(deps: ToolDeps):
         case = _resolve_case(deps.conn, case_query)
         if isinstance(case, str):
             return case
+        # One pending draft per (case, recipient): a retried tool call must not
+        # stack duplicate approval cards a human could approve twice.
+        dup = deps.conn.execute(
+            "SELECT id FROM draft WHERE case_id = ? AND to_channel_address = ? "
+            "AND state = 'pending' LIMIT 1",
+            (case["id"], recipient_email),
+        ).fetchone()
+        if dup is not None:
+            return (
+                f"DRAFT_EXISTS: draft {dup['id']} to {recipient_email} on this "
+                "case is already pending human approval. Do not create another; "
+                "tell the human it is waiting for their approval."
+            )
         draft = create_draft(
             deps.conn,
             DraftAction(
@@ -440,6 +470,31 @@ def _create_case(deps: ToolDeps):
             )
         other_role = "beneficiary" if role_key == "petitioner" else "petitioner"
 
+        # Idempotency guard: the same person (by email) must not get a second
+        # case from a retried ask. Email is the natural key here — the same one
+        # the sendgate lookup uses.
+        main_email_clean = _clean_arg(email)
+        if main_email_clean:
+            existing = deps.conn.execute(
+                'SELECT ca.id, ca.name FROM client c '
+                "JOIN party p ON p.client_id = c.id "
+                'JOIN "case" ca ON ca.id = p.case_id WHERE c.email = ?',
+                (main_email_clean,),
+            ).fetchone()
+            if existing is not None:
+                number_row = deps.conn.execute(
+                    "SELECT case_number FROM case_history WHERE case_id = ? LIMIT 1",
+                    (existing["id"],),
+                ).fetchone()
+                number = number_row["case_number"] if number_row else "not on file"
+                return (
+                    f"ALREADY_EXISTS: {main_email_clean} is already on case "
+                    f"'{existing['name']}' (case id {existing['id']}, firm number "
+                    f"{number}). Do not create a duplicate — use that case id "
+                    "with the other tools, and tell the human the case already "
+                    "exists."
+                )
+
         # Main person: only the fields the attorney actually stated. Blanks → None.
         parties = [
             HandoffParty(
@@ -502,10 +557,11 @@ def _create_case(deps: ToolDeps):
             len(links),
         )
         lines.append(
-            f"Now draft the intake invitation with create_email_draft (include "
-            f"the client's portal link in the body) and tell the human you are "
-            f"drafting to {main_name} at {main_email} and need their approval to "
-            f"send. Do NOT claim anything was sent."
+            f"Now draft the intake invitation with create_email_draft using "
+            f"case_query='{case.id}' EXACTLY (the case id — names can be "
+            f"ambiguous). Include the client's portal link in the body and tell "
+            f"the human you are drafting to {main_name} at {main_email} and need "
+            f"their approval to send. Do NOT claim anything was sent."
         )
         return "\n".join(lines)
 

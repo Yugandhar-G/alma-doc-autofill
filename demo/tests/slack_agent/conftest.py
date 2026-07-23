@@ -48,6 +48,9 @@ class FakeSlackClient:
         self.posts: list[dict[str, Any]] = []
         self.updates: list[dict[str, Any]] = []
         self.views: list[dict[str, Any]] = []
+        # Thread-history seam: settable replies + a record of every fetch call.
+        self.thread_replies: list[dict[str, Any]] = []
+        self.replies_calls: list[dict[str, Any]] = []
         self._ts = 0
 
     async def chat_postMessage(self, **kwargs: Any) -> dict[str, Any]:
@@ -62,6 +65,10 @@ class FakeSlackClient:
     async def views_open(self, **kwargs: Any) -> dict[str, Any]:
         self.views.append(kwargs)
         return {"ok": True}
+
+    async def conversations_replies(self, **kwargs: Any) -> dict[str, Any]:
+        self.replies_calls.append(kwargs)
+        return {"messages": self.thread_replies}
 
 
 @pytest.fixture()

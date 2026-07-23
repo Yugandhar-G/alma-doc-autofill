@@ -9,7 +9,7 @@ import sqlite3
 
 import pytest
 from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage
 
 from core import events
 from seed.seed_case import seed
@@ -31,6 +31,22 @@ def _tool_call_msg(*calls):
 class ScriptedChatModel(FakeMessagesListChatModel):
     def bind_tools(self, tools, **kwargs):
         return self
+
+
+class RecordingChatModel(ScriptedChatModel):
+    """ScriptedChatModel that also records every HumanMessage it is handed, so a
+    test can assert on the exact prompt the agent built (the base fake keeps no
+    prompt log)."""
+
+    captured: list = []
+
+    def _generate(self, messages, stop=None, run_manager=None, **kwargs):
+        for msg in messages:
+            if isinstance(msg, HumanMessage):
+                self.captured.append(msg.content)
+        return super()._generate(
+            messages, stop=stop, run_manager=run_manager, **kwargs
+        )
 
 
 # --------------------------------------------------------------------------- #
@@ -223,7 +239,7 @@ def test_mention_create_case_then_drafts_invitation_never_sends(
     from core.case_history import get_history
 
     case = db.execute('SELECT id, name FROM "case"').fetchone()
-    assert case is not None and case["name"] == "Yugandhar"
+    assert case is not None and case["name"] == "Yugandhar Gopu"
     records = get_history(db, case["id"])
     assert len(records) == 1 and records[0].case_number
 
@@ -243,3 +259,141 @@ def test_case_context_names_thread_case(db) -> None:
     ctx = mention._case_context(db, case_id)
     assert "Ravi Kumar / Mei Lin" in ctx and case_id in ctx
     assert "not inside a known case thread" in mention._case_context(db, None)
+
+
+# --------------------------------------------------------------------------- #
+# thread_history — conversation memory via Slack replies
+# --------------------------------------------------------------------------- #
+
+def test_thread_history_formats_labels_strips_mentions_excludes_current(slack) -> None:
+    """Mixed human/bot replies render oldest-first with the right speaker labels,
+    mention tokens stripped, and the current ask excluded."""
+    slack.thread_replies = [
+        {"ts": "5.0", "text": f"<@{BOT}> what do we know about the Kumar case?", "user": "U1"},
+        {"ts": "6.0", "text": "Ravi Kumar / Mei Lin — still in intake.", "bot_id": "B1"},
+        {"ts": "7.0", "text": "thanks, one more thing", "subtype": "bot_message"},
+        {"ts": "9.0", "text": "the live ask — must be excluded", "user": "U1"},
+    ]
+
+    history = asyncio.run(mention.thread_history(slack, "C1", "5.0", "9.0"))
+
+    assert history is not None
+    lines = history.split("\n")
+    assert len(lines) == 3  # 4 replies minus the current (9.0)
+    assert lines[0] == "Team member: what do we know about the Kumar case?"
+    assert "<@" not in history  # mention token stripped
+    assert lines[1].startswith("Yunaki: ")  # bot_id → Yunaki
+    assert "Ravi Kumar / Mei Lin" in lines[1]
+    assert lines[2].startswith("Yunaki: ")  # subtype bot_message → Yunaki
+    assert "live ask" not in history  # current ts excluded
+    # Fetched the thread root with the documented limit.
+    assert slack.replies_calls == [{"channel": "C1", "ts": "5.0", "limit": 30}]
+
+
+def test_thread_history_respects_caps(slack) -> None:
+    """max_messages keeps the most recent; total_chars drops oldest first;
+    per_message_chars truncates with a trailing ellipsis."""
+    slack.thread_replies = [
+        {"ts": f"{i}.0", "text": f"{i}: " + ("word " * 40), "user": "U1"}
+        for i in range(1, 7)  # six messages, ts 1.0 .. 6.0
+    ]
+
+    # max_messages binds (char caps huge): keep newest 3, still oldest-first.
+    capped = asyncio.run(
+        mention.thread_history(
+            slack, "C1", "root", "none",
+            max_messages=3, per_message_chars=1000, total_chars=1_000_000,
+        )
+    )
+    lines = capped.split("\n")
+    assert len(lines) == 3
+    assert lines[0].startswith("Team member: 4:")
+    assert lines[-1].startswith("Team member: 6:")
+
+    # total_chars + per_message truncation bind: each line ~34 chars, only the
+    # two newest fit under 70, oldest-first.
+    trimmed = asyncio.run(
+        mention.thread_history(
+            slack, "C1", "root", "none",
+            max_messages=6, per_message_chars=20, total_chars=70,
+        )
+    )
+    tlines = trimmed.split("\n")
+    assert len(tlines) == 2
+    assert all(line.endswith("…") for line in tlines)
+    assert tlines[0].startswith("Team member: 5:")
+    assert tlines[1].startswith("Team member: 6:")
+
+
+def test_thread_history_api_failure_returns_none(slack) -> None:
+    """A Slack API error never propagates — history degrades to None."""
+    async def boom(**kwargs):
+        raise RuntimeError("slack unavailable")
+
+    slack.conversations_replies = boom
+    assert asyncio.run(mention.thread_history(slack, "C1", "5.0", "9.0")) is None
+
+
+def test_thread_history_none_when_only_current_message(slack) -> None:
+    """A thread holding only the current ask yields no usable history."""
+    slack.thread_replies = [{"ts": "9.0", "text": "just me", "user": "U1"}]
+    assert asyncio.run(mention.thread_history(slack, "C1", "5.0", "9.0")) is None
+
+
+def test_no_thread_skips_history_fetch(db, slack, monkeypatch) -> None:
+    """A top-level mention (no thread_ts) must never call conversations_replies."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    seed(db)
+    model = ScriptedChatModel(responses=[AIMessage(content="ok")])
+
+    reply = _run_mention(db, slack, model, text=f"<@{BOT}> hello", thread_ts=None)
+
+    assert reply == "ok"
+    assert slack.replies_calls == []
+
+
+def test_mention_followup_resolves_this_case_via_history(db, slack, monkeypatch) -> None:
+    """The real transcript, fixed: a bare 'this case' follow-up in the same thread
+    resolves because the prior turns are threaded into the prompt. Before the fix
+    the stateless run answered 'I don't have a case name to work with yet'."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    case_id = seed(db)
+    threads.map_thread(db, case_id, "C1", "5.0")
+
+    # The thread so far: attorney named the Kumar case, Yunaki answered.
+    slack.thread_replies = [
+        {"ts": "5.0", "text": f"<@{BOT}> what do we know about the Kumar case?", "user": "U1"},
+        {"ts": "6.0", "text": "Ravi Kumar / Mei Lin — still in intake, checklist pending.", "bot_id": "B1"},
+    ]
+
+    model = RecordingChatModel(
+        responses=[
+            _tool_call_msg(("get_case_status", {"case_query": "Kumar"})),
+            AIMessage(content="*Ravi Kumar / Mei Lin* — intake, checklist pending."),
+        ]
+    )
+    model.captured = []  # isolate from any prior instance's class-level list
+
+    reply = asyncio.run(
+        mention.handle_mention(
+            conn=db,
+            client=slack,
+            channel="C1",
+            message_ts="9.0",
+            thread_ts="5.0",
+            text="can you give me a brief what happened with this case",
+            model_factory=lambda: model,
+        )
+    )
+
+    # The prompt the model saw carries the history block and the case name, so a
+    # bare "this case" ask has something to resolve against.
+    assert model.captured, "model never received a HumanMessage"
+    prompt = model.captured[0]
+    assert "Conversation so far in this thread (oldest first):" in prompt
+    assert "Kumar" in prompt
+    assert "this case" in prompt  # the live ask, threaded in
+    # The fix worked end to end: grounded reply, posted in-thread.
+    assert reply == "*Ravi Kumar / Mei Lin* — intake, checklist pending."
+    post = slack.posts[-1]
+    assert post["thread_ts"] == "5.0" and post["text"] == reply
