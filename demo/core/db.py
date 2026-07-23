@@ -170,8 +170,43 @@ def _ddl() -> str:
     """
 
 
+def _migrate_event_check(conn: sqlite3.Connection) -> None:
+    """Rebuild `event` when its CHECK predates the current enum. Idempotent.
+
+    CREATE TABLE IF NOT EXISTS never upgrades an existing table, so a DB
+    created before an enum amendment (e.g. case_history.updated, Jul 23)
+    keeps the old CHECK and rejects new event types. SQLite cannot ALTER a
+    CHECK, so: create fresh under a temp name, copy, drop, rename. The
+    indexes are recreated by the normal DDL pass that follows.
+    """
+    row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='event'"
+    ).fetchone()
+    if row is None or all(t in row[0] for t in EVENT_TYPES):
+        return  # row[0] not row["sql"]: callers may pass conns without Row factory
+    conn.executescript(
+        f"""
+        BEGIN;
+        CREATE TABLE event_migrated (
+            id      TEXT PRIMARY KEY,
+            ts      TEXT NOT NULL,
+            type    TEXT NOT NULL CHECK (type IN ({_sql_enum(EVENT_TYPES)})),
+            case_id TEXT,
+            actor   TEXT NOT NULL,
+            payload TEXT NOT NULL DEFAULT '{{}}'
+        );
+        INSERT INTO event_migrated SELECT id, ts, type, case_id, actor, payload FROM event;
+        DROP TABLE event;
+        ALTER TABLE event_migrated RENAME TO event;
+        COMMIT;
+        """
+    )
+
+
 def init_schema(conn: sqlite3.Connection) -> None:
-    """Create all tables, indexes, and triggers. Idempotent."""
+    """Create all tables, indexes, and triggers. Idempotent (and self-healing
+    for the one schema element that evolves: the event-type CHECK)."""
+    _migrate_event_check(conn)
     conn.executescript(_ddl())
     conn.commit()
 
