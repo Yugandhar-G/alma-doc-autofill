@@ -111,3 +111,22 @@ def test_handoff_missing_phone_is_asked_not_invented(db, slack, run, wire_agent)
     )
     phones = [r["phone"] for r in db.execute("SELECT phone FROM client")]
     assert phones == [None, None]
+
+
+# --- @yunaki-only routing: handoff vs question discrimination (Jul 22) ---
+from slack_agent.listener import looks_like_handoff
+
+
+def test_looks_like_handoff_true_on_client_email():
+    assert looks_like_handoff("New marriage case, Ravi ravi@x.com, Mei mei@y.com")
+
+
+def test_looks_like_handoff_true_on_keywords():
+    assert looks_like_handoff("open a case for a new client")
+    assert looks_like_handoff("petitioner and beneficiary details attached")
+
+
+def test_looks_like_handoff_false_on_question():
+    assert not looks_like_handoff("what is the status of case 156?")
+    assert not looks_like_handoff("share schema1 reply")
+    assert not looks_like_handoff("look at the case we are working on")

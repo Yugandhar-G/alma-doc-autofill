@@ -58,19 +58,27 @@ def _register(
 
     @app.event("message")
     async def _on_message(event, client, logger):  # noqa: ANN001
-        if not listener.should_handle(event, settings.channel_cases, bot_user_id):
-            return
-        await listener.handle_handoff_message(
-            conn=conn,
-            client=client,
-            channel=event["channel"],
-            message_ts=event["ts"],
-            text=event.get("text", ""),
-        )
+        # The bot responds ONLY when explicitly tagged (@yunaki). Plain channel
+        # messages are ignored so it never talks over normal conversation;
+        # handoffs now arrive through the app_mention path below.
+        return
 
     @app.event("app_mention")
     async def _on_mention(event, client):  # noqa: ANN001
         if not mention.should_handle_mention(event):
+            return
+        ask = mention.strip_mention(event.get("text", ""))
+        # Route: a tagged message carrying case-handoff signal (a client email
+        # or handoff language) goes to the handoff agent; everything else is a
+        # question/status/draft ask for the mention agent.
+        if listener.looks_like_handoff(ask):
+            await listener.handle_handoff_message(
+                conn=conn,
+                client=client,
+                channel=event["channel"],
+                message_ts=event["ts"],
+                text=ask,
+            )
             return
         await mention.handle_mention(
             conn=conn,

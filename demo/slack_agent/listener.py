@@ -15,12 +15,36 @@ handoff_agent.)*
 from __future__ import annotations
 
 import logging
+import re
 import sqlite3
 from typing import Any
 
 from slack_agent import handoff_agent
 
 logger = logging.getLogger("slack_agent.listener")
+
+_EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
+_HANDOFF_KEYWORDS = (
+    "new case",
+    "open a case",
+    "new client",
+    "new matter",
+    "handoff",
+    "hand off",
+    "petitioner",
+    "beneficiary",
+)
+
+
+def looks_like_handoff(text: str) -> bool:
+    """Heuristic gate: does a tagged ask look like a case handoff (create) vs a
+    question (answer)? A client email address is the strongest signal; explicit
+    handoff language is the fallback. The handoff agent still applies null-over-
+    guess after this, so a false positive just means it asks for the fields."""
+    if _EMAIL_RE.search(text or ""):
+        return True
+    lowered = (text or "").lower()
+    return any(k in lowered for k in _HANDOFF_KEYWORDS)
 
 
 def should_handle(
