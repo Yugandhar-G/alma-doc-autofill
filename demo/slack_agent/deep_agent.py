@@ -126,7 +126,8 @@ def make_agent_model() -> BaseChatModel:
     return ChatAnthropic(
         model=_MODEL,
         api_key=config.get("ANTHROPIC_API_KEY"),
-        temperature=0,
+        # No temperature: sampling params are removed on claude-sonnet-5
+        # (400: "`temperature` is deprecated for this model").
         max_tokens=4096,
     )
 
