@@ -50,9 +50,38 @@ def ensure_tables(conn: sqlite3.Connection) -> None:
             event_id TEXT PRIMARY KEY,
             seen_at  TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS slack_bot_thread (
+            channel    TEXT NOT NULL,
+            thread_ts  TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            PRIMARY KEY (channel, thread_ts)
+        );
         """
     )
     conn.commit()
+
+
+def mark_bot_thread(conn: sqlite3.Connection, channel: str, thread_ts: str) -> None:
+    """Record a thread the bot is participating in, so in-thread follow-ups can
+    continue the conversation without a re-tag. Idempotent."""
+    conn.execute(
+        "INSERT OR IGNORE INTO slack_bot_thread (channel, thread_ts, created_at) "
+        "VALUES (?, ?, ?)",
+        (channel, thread_ts, _now_iso()),
+    )
+    conn.commit()
+
+
+def is_bot_thread(conn: sqlite3.Connection, channel: str, thread_ts: str) -> bool:
+    """True if the bot already engaged in this (channel, thread_ts)."""
+    return (
+        conn.execute(
+            "SELECT 1 FROM slack_bot_thread WHERE channel = ? AND thread_ts = ?",
+            (channel, thread_ts),
+        ).fetchone()
+        is not None
+    )
 
 
 # --------------------------------------------------------------------------- #

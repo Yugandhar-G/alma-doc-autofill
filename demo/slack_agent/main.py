@@ -58,16 +58,37 @@ def _register(
 
     @app.event("message")
     async def _on_message(event, client, logger):  # noqa: ANN001
-        # The bot responds ONLY when explicitly tagged (@yunaki). Plain channel
-        # messages are ignored so it never talks over normal conversation;
-        # handoffs now arrive through the app_mention path below.
-        return
+        # The bot engages on an explicit @yunaki tag (app_mention below). The
+        # one exception: a reply INSIDE a thread the bot is already in — that's
+        # a continuation of a conversation the user started with a tag, so it
+        # should not need re-tagging. Everything else (untagged top-level posts,
+        # threads the bot isn't in) is ignored.
+        if event.get("bot_id") or event.get("subtype"):
+            return
+        thread_ts = event.get("thread_ts")
+        if not thread_ts or thread_ts == event.get("ts"):
+            return  # top-level post — requires a tag, handled by app_mention
+        if f"<@{bot_user_id}>" in (event.get("text") or ""):
+            return  # tagged reply — app_mention handles it, avoid double-fire
+        channel = event.get("channel")
+        if not threads.is_bot_thread(conn, channel, thread_ts):
+            return  # not a thread the bot is participating in
+        await mention.handle_mention(
+            conn=conn,
+            client=client,
+            channel=channel,
+            message_ts=event["ts"],
+            thread_ts=thread_ts,
+            text=event.get("text", ""),
+        )
 
     @app.event("app_mention")
     async def _on_mention(event, client):  # noqa: ANN001
         if not mention.should_handle_mention(event):
             return
         ask = mention.strip_mention(event.get("text", ""))
+        channel = event["channel"]
+        root_ts = event.get("thread_ts") or event["ts"]
         # Route: a tagged message carrying case-handoff signal (a client email
         # or handoff language) goes to the handoff agent; everything else is a
         # question/status/draft ask for the mention agent.
@@ -75,19 +96,21 @@ def _register(
             await listener.handle_handoff_message(
                 conn=conn,
                 client=client,
-                channel=event["channel"],
+                channel=channel,
                 message_ts=event["ts"],
                 text=ask,
             )
-            return
-        await mention.handle_mention(
-            conn=conn,
-            client=client,
-            channel=event["channel"],
-            message_ts=event["ts"],
-            thread_ts=event.get("thread_ts"),
-            text=event.get("text", ""),
-        )
+        else:
+            await mention.handle_mention(
+                conn=conn,
+                client=client,
+                channel=channel,
+                message_ts=event["ts"],
+                thread_ts=event.get("thread_ts"),
+                text=event.get("text", ""),
+            )
+        # Remember this thread so in-thread follow-ups continue without a re-tag.
+        threads.mark_bot_thread(conn, channel, root_ts)
 
     @app.action("draft_approve")
     async def _approve(ack, body, client):  # noqa: ANN001
