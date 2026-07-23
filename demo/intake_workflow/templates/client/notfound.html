@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Link not found · Yew Legal{% endblock %}
+{% block body_class %}app app--client{% endblock %}
+
+{% block header %}
+<header class="warmbar">
+  <div class="warmbar__inner container">
+    <div class="brand brand--client">
+      <span class="brand__mark">Yew Legal</span>
+      <span class="brand__sub">Your case with Allison</span>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="card notfound">
+  <h1>We couldn't find that link</h1>
+  <p>This intake link may have expired, or it might have a typo from being copied.</p>
+  <p class="muted">Please reply to Allison's most recent email and we'll send you a fresh link right away.</p>
+</div>
+{% endblock %}

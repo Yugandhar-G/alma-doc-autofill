@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Attorney review queue · Yunaki{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <a class="muted small" href="/staff">← Dashboard</a>
+    <h1>Attorney review queue</h1>
+    <p class="muted">Sensitive answers routed here for {{ 'Allison' }} to review. The client never sees these flags — their intake keeps moving normally.</p>
+  </div>
+</div>
+
+{% if request.query_params.get('clear_error') %}
+<div class="flash flash--warn">Couldn't clear that item — it may already have been reviewed.</div>
+{% endif %}
+
+{% if not entries %}
+<div class="card empty">
+  <p>Nothing is waiting for attorney review.</p>
+</div>
+{% else %}
+{% for e in entries %}
+<div class="card attorney-item">
+  <div class="item__head">
+    <div>
+      <a class="link-strong" href="/staff/case/{{ e.case_id }}">{{ e.case_title }}</a>
+      <div><strong>{{ e.item_label }}</strong></div>
+      <div class="muted small">Flagged {{ e.since | fmt_dt }}</div>
+    </div>
+    <span class="chip chip--attorney">Attorney review</span>
+  </div>
+
+  <ul class="findings findings--attorney">
+    {% for msg in e.flags %}<li>{{ msg }}</li>{% endfor %}
+  </ul>
+
+  <form method="post" action="/staff/case/{{ e.case_id }}/item/{{ e.item_key }}/clear-review" class="clear-form">
+    <input class="input-inline" type="text" name="reviewer" value="Allison" aria-label="Reviewer name">
+    <input class="input-inline" type="text" name="note" placeholder="Sign-off note (optional)">
+    <button class="btn btn--primary btn--sm" type="submit">Clear review</button>
+  </form>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

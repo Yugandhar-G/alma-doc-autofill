@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ packet.form_type }} packet · {{ case.title }}{% endblock %}
+
+{% block content %}
+<div class="page-head no-print">
+  <div>
+    <a class="muted small" href="/staff/case/{{ case.id }}">← Back to case</a>
+    <h1>{{ packet.form_type }} — form-prep packet</h1>
+    <p class="muted">{{ packet.case_title }}</p>
+  </div>
+  <button class="btn btn--primary" type="button" onclick="window.print()">Print</button>
+</div>
+
+<div class="print-head">
+  <h1>{{ packet.form_type }} — form-prep packet</h1>
+  <p class="muted">{{ packet.case_title }}</p>
+</div>
+
+{% if packet.missing %}
+<div class="missing-box">
+  <strong>Missing information ({{ packet.missing | length }})</strong>
+  <p class="muted small">No accepted answer yet for these fields — leave blank on the form, or collect them before filing. Nothing here is guessed.</p>
+  <ul>
+    {% for label in packet.missing %}<li>{{ label }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% for section in packet.sections %}
+<section class="packet-section">
+  <h2>{{ section.title }}</h2>
+  <table class="packet-table">
+    <tbody>
+      {% for field in section.fields %}
+      <tr class="{{ 'is-missing' if not field.value else '' }}">
+        <th scope="row">{{ field.label }}</th>
+        <td>
+          {% if field.value %}{{ field.value }}{% else %}<span class="muted">—</span>{% endif %}
+          <div class="packet-source">{{ field.source }}</div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endfor %}
+{% endblock %}

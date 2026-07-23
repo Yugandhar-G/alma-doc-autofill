@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Yunaki{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Case dashboard</h1>
+    <p class="muted">Stalest cases first — where a client has gone quiet the longest.</p>
+  </div>
+  <div class="head-actions">
+    {% if attorney_count and attorney_count > 0 %}
+    <a class="btn btn--ghost btn--attorney" href="/staff/attorney-queue">
+      Attorney review <span class="pill pill--attorney">{{ attorney_count }}</span>
+    </a>
+    {% endif %}
+    <form method="post" action="/staff/tick" class="inline-form">
+      <button class="btn btn--ghost" type="submit" title="Draft any follow-ups that are now due">
+        Run scheduler tick
+      </button>
+    </form>
+  </div>
+</div>
+
+{% if flash_drafted is not none %}
+<div class="flash flash--ok">
+  Scheduler ran —
+  {% if flash_drafted == 0 %}no new follow-ups were due.
+  {% else %}{{ flash_drafted }} new follow-up draft{{ 's' if flash_drafted != 1 else '' }}
+  now waiting in the approval queues.{% endif %}
+</div>
+{% endif %}
+
+{% if not rows %}
+<div class="card empty">
+  <p>No cases yet.</p>
+  <a class="btn btn--primary" href="/staff/case/new">Create the first case</a>
+</div>
+{% else %}
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Case</th>
+        <th>Stage</th>
+        <th class="col-progress">Progress</th>
+        <th class="col-num">Drafts to approve</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      {% set badge = stage_badge(row.progress.stage) %}
+      <tr>
+        <td>
+          <a class="link-strong" href="/staff/case/{{ row.case.id }}">{{ row.case.title }}</a>
+          <div class="muted small">
+            {{ row.case.party('petitioner').full_name }} &amp; {{ row.case.party('beneficiary').full_name }}
+          </div>
+        </td>
+        <td><span class="badge {{ badge.cls }}">{{ badge.label }}</span></td>
+        <td class="col-progress">
+          <div class="progress" role="img" aria-label="{{ row.progress.percent }} percent complete">
+            <div class="progress__bar" style="width: {{ row.progress.percent }}%"></div>
+          </div>
+          <div class="muted small">{{ row.progress.accepted }}/{{ row.progress.required_total }} accepted · {{ row.progress.percent }}%</div>
+        </td>
+        <td class="col-num">
+          {% if row.drafted %}
+            <span class="pill pill--attention">{{ row.drafted }}</span>
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<section class="panel">
+  <h2>I-751 radar</h2>
+  <p class="muted small">Green-card cases approaching the removal-of-conditions window (fires from the I-485 approval date).</p>
+  {% if not radar %}
+    <div class="card muted">No cases with an I-485 approval date yet.</div>
+  {% else %}
+  <div class="card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Case</th>
+          <th>Status</th>
+          <th>Collect docs from</th>
+          <th>Filing window opens</th>
+          <th>Green card expires</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in radar %}
+        {% set rb = radar_badge(r.status) %}
+        <tr>
+          <td><a class="link-strong" href="/staff/case/{{ r.case_id }}">{{ r.title }}</a></td>
+          <td><span class="badge {{ rb.cls }}">{{ rb.label }}</span></td>
+          <td>{{ r.collect_docs_from | fmt_date }}</td>
+          <td>{{ r.window_opens | fmt_date }}</td>
+          <td>{{ r.gc_expires | fmt_date }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

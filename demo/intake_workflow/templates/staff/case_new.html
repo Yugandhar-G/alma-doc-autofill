@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}New case · Yunaki{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>New case</h1>
+    <p class="muted">Instantiates the marriage-based AOS checklist and mints a magic link for each spouse.</p>
+  </div>
+  <a class="btn btn--ghost btn--sm" href="/staff">Cancel</a>
+</div>
+
+<form method="post" action="/staff/case/new" class="card form">
+  <div class="field">
+    <label for="title">Case title</label>
+    <input id="title" name="title" type="text" required
+           placeholder="e.g. Ramirez–Osei · Marriage AOS">
+  </div>
+
+  <div class="field">
+    <label for="consult_notes">Consult notes <span class="muted small">(optional)</span></label>
+    <textarea id="consult_notes" name="consult_notes" rows="3"
+              placeholder="Anything Isaiah should carry into intake."></textarea>
+  </div>
+
+  <fieldset class="party-grid">
+    <legend>Petitioner (U.S. citizen / LPR)</legend>
+    <div class="field">
+      <label for="petitioner_name">Full name</label>
+      <input id="petitioner_name" name="petitioner_name" type="text" required>
+    </div>
+    <div class="field">
+      <label for="petitioner_email">Email</label>
+      <input id="petitioner_email" name="petitioner_email" type="email" required>
+    </div>
+  </fieldset>
+
+  <fieldset class="party-grid">
+    <legend>Beneficiary (applying spouse)</legend>
+    <div class="field">
+      <label for="beneficiary_name">Full name</label>
+      <input id="beneficiary_name" name="beneficiary_name" type="text" required>
+    </div>
+    <div class="field">
+      <label for="beneficiary_email">Email</label>
+      <input id="beneficiary_email" name="beneficiary_email" type="email" required>
+    </div>
+  </fieldset>
+
+  <div class="field field--narrow">
+    <label for="i485_approved_on">I-485 approval date <span class="muted small">(optional — unlocks I-751 tracking)</span></label>
+    <input id="i485_approved_on" name="i485_approved_on" type="date">
+  </div>
+
+  <div class="form-actions">
+    <button class="btn btn--primary" type="submit">Create case</button>
+  </div>
+</form>
+{% endblock %}

@@ -1,23 +1,24 @@
-"""Live integrated-flow smoke — our /core lane wired to Nanda's Yew app.
+"""Live integrated-flow smoke — the monorepo intake workflow on one shared DB.
 
-Boots Nanda's REAL FastAPI server (Yunaki-Yew, bridge branch) against a
-throwaway shared DB and drives the whole firm flow over HTTP:
+Boots the REAL intake-workflow FastAPI server (demo/intake_workflow, ported
+from Nanda's Yunaki-Yew) against a throwaway DB and drives the whole firm
+flow over HTTP:
 
-  handoff (our casewrite) -> his HandoffConsumer opens the case + writes his
-  magic-link portal URLs into our intake.url -> client submits answers on his
-  portal -> paralegal accepts in his staff UI -> bridge upserts our typed
-  case_history + mirrors events onto our bus -> follow-up drafted by his
-  scheduler -> staff approve routes through SendgateProvider -> a PENDING
-  DraftAction lands on our bus and NOTHING is sent (message_sent stays empty).
+  handoff (our casewrite) -> the HandoffConsumer opens the intake case +
+  writes magic-link portal URLs into our intake.url -> client submits answers
+  on the portal -> paralegal accepts in the staff UI -> integration layer
+  upserts our typed case_history + mirrors events onto our bus -> follow-up
+  drafted by the scheduler -> staff approve routes through SendgateProvider
+  (the DEFAULT provider now) -> a PENDING DraftAction lands on our bus and
+  NOTHING is sent (message_sent stays empty).
 
 No Slack, no Gmail, no LLM calls — this proves the seams, not the models.
 Run from demo/:  .venv/bin/python -m scripts.integrated_flow_smoke
-Env: YEW_REPO (default ~/Yunaki-Yew), YEW_PORT (default 8791).
+Env: YEW_PORT (default 8791).
 
-The one piece of test-harness time travel: his follow-up ladder needs days to
-elapse, so we backdate created_at in his case blob before the scheduler tick.
-That edit is to HIS throwaway store only, and only to make "5 days later"
-happen in a smoke test.
+The one piece of test-harness time travel: the follow-up ladder needs days to
+elapse, so we backdate created_at in the intake case blob before the scheduler
+tick — throwaway DB only, to make "5 days later" happen in a smoke test.
 """
 
 from __future__ import annotations
@@ -42,7 +43,7 @@ from core.models import Event
 from slack_agent.casewrite import create_handoff_case
 from slack_agent.handoff_agent import HandoffParse, HandoffParty
 
-YEW_REPO = Path(os.environ.get("YEW_REPO", str(Path.home() / "Yunaki-Yew")))
+DEMO_DIR = Path(__file__).resolve().parent.parent
 PORT = int(os.environ.get("YEW_PORT", "8791"))
 BASE = f"http://127.0.0.1:{PORT}"
 
@@ -68,11 +69,8 @@ def wait_for(label: str, fn, timeout: float = 25.0, interval: float = 0.5):
 
 
 def main() -> None:
-    if not (YEW_REPO / "app" / "bridge").is_dir():
-        raise SystemExit(
-            f"{YEW_REPO} missing app/bridge — clone Yunaki-Yew and check out "
-            "the integration/yunaki-core-bridge branch (see README)."
-        )
+    if not (DEMO_DIR / "intake_workflow").is_dir():
+        raise SystemExit("demo/intake_workflow missing — the port hasn't landed.")
     tmp = Path(tempfile.mkdtemp(prefix="yunaki_flow_"))
     shared_db = tmp / "shared.db"
     print(f"[flow] workspace {tmp}")
@@ -101,19 +99,20 @@ def main() -> None:
        len(records) == 2 and bool(case_number) and case_number.startswith("YIL-")
        and all(r.case_number == case_number for r in records))
 
-    # ---- 2. boot his real server with the bridge enabled ------------------ #
-    env = {k: v for k, v in os.environ.items() if k != "YUNAKI_STAFF_PASSWORD"}
+    # ---- 2. boot the real intake-workflow server (one shared DB) ---------- #
+    env = {
+        k: v for k, v in os.environ.items()
+        if k not in ("YUNAKI_STAFF_PASSWORD", "YUNAKI_EMAIL_PROVIDER")
+    }  # provider unset -> SendgateProvider is the native default
     env.update({
-        "YUNAKI_DB": str(tmp / "yew.db"),
-        "YUNAKI_SHARED_DB": str(shared_db),
-        "YUNAKI_EMAIL_PROVIDER": "sendgate",
+        "DB_PATH": str(shared_db),
         "YUNAKI_PORTAL_BASE": BASE,
         "YUNAKI_UPLOADS": str(tmp / "uploads"),
     })
     server = subprocess.Popen(
-        [str(YEW_REPO / ".venv" / "bin" / "python"), "-m", "uvicorn",
-         "app.main:app", "--port", str(PORT), "--log-level", "warning"],
-        cwd=YEW_REPO, env=env,
+        [str(DEMO_DIR / ".venv" / "bin" / "python"), "-m", "uvicorn",
+         "intake_workflow.main:app", "--port", str(PORT), "--log-level", "warning"],
+        cwd=DEMO_DIR, env=env,
         stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
     )
     try:
@@ -133,10 +132,10 @@ def main() -> None:
         links = wait_for("consumer to write portal links", _links)
         tokens = {row["role"]: row["url"].rsplit("/c/", 1)[1] for row in links}
         yew_case_id = conn.execute(
-            "SELECT yew_case_id FROM yew_case_map WHERE core_case_id = ?",
+            "SELECT yew_case_id FROM iw_case_map WHERE core_case_id = ?",
             (case_id,),
         ).fetchone()["yew_case_id"]
-        ok("handoff consumed: his case created + portal links in our intake.url",
+        ok("handoff consumed: intake case created + portal links in our intake.url",
            set(tokens) == {"petitioner", "beneficiary"})
 
         # ---- 4. client submits on HIS portal ------------------------------ #
@@ -182,11 +181,11 @@ def main() -> None:
            f"types={types}")
 
         # ---- 6. follow-up -> SendgateProvider -> pending draft, no send --- #
-        _backdate_his_case(tmp / "yew.db", yew_case_id, days=5)
+        _backdate_intake_case(shared_db, yew_case_id, days=5)
         assert client.post("/staff/tick").status_code == 303
         outreach_id = wait_for(
             "scheduler to draft a follow-up",
-            lambda: _first_drafted_outreach(tmp / "yew.db", yew_case_id),
+            lambda: _first_drafted_outreach(shared_db, yew_case_id),
         )
         assert client.post(
             f"/staff/case/{yew_case_id}/outreach/{outreach_id}/approve"
@@ -219,28 +218,28 @@ def _up(client: httpx.Client) -> bool:
         return False
 
 
-def _backdate_his_case(yew_db: Path, yew_case_id: str, *, days: int) -> None:
-    """Test-harness time travel: make his ladder think the case is `days` old."""
-    conn = sqlite3.connect(yew_db)
+def _backdate_intake_case(db: Path, yew_case_id: str, *, days: int) -> None:
+    """Test-harness time travel: make the ladder think the case is `days` old."""
+    conn = sqlite3.connect(db)
     try:
         (blob,) = conn.execute(
-            "SELECT data FROM cases WHERE id = ?", (yew_case_id,)
+            "SELECT data FROM iw_cases WHERE id = ?", (yew_case_id,)
         ).fetchone()
         data = json.loads(blob)
         past = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
         data["created_at"] = past
-        conn.execute("UPDATE cases SET data = ? WHERE id = ?",
+        conn.execute("UPDATE iw_cases SET data = ? WHERE id = ?",
                      (json.dumps(data), yew_case_id))
         conn.commit()
     finally:
         conn.close()
 
 
-def _first_drafted_outreach(yew_db: Path, yew_case_id: str) -> str | None:
-    conn = sqlite3.connect(yew_db)
+def _first_drafted_outreach(db: Path, yew_case_id: str) -> str | None:
+    conn = sqlite3.connect(db)
     try:
         row = conn.execute(
-            "SELECT data FROM cases WHERE id = ?", (yew_case_id,)
+            "SELECT data FROM iw_cases WHERE id = ?", (yew_case_id,)
         ).fetchone()
         if row is None:
             return None

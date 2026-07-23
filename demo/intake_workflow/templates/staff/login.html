@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Staff sign-in · Yunaki{% endblock %}
+
+{% block header %}
+<header class="topbar">
+  <div class="topbar__inner container">
+    <a class="brand" href="/staff-login">
+      <span class="brand__mark">Yunaki</span>
+      <span class="brand__sub">Yew Legal · intake</span>
+    </a>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 24rem; margin: 3rem auto;">
+  <h1>Staff sign-in</h1>
+  <p class="muted">Enter the staff password to reach the intake workspace.</p>
+
+  {% if error %}
+  <div class="flash" role="alert"
+       style="background: var(--danger-soft); color: #8f2c2c; border: 1px solid #eecaca;">
+    {{ error }}
+  </div>
+  {% endif %}
+
+  <form method="post" action="/staff-login" class="form">
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password"
+             autocomplete="current-password" autofocus required>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn--primary btn--block" type="submit">Sign in</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

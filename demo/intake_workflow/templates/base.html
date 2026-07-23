@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Yunaki — Yew Legal{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="{% block body_class %}app app--staff{% endblock %}">
+  {% block header %}
+  <header class="topbar">
+    <div class="topbar__inner container">
+      <a class="brand" href="/staff">
+        <span class="brand__mark">Yunaki</span>
+        <span class="brand__sub">Yew Legal · intake</span>
+      </a>
+      <nav class="topnav">
+        <a href="/staff">Dashboard</a>
+        <a class="btn btn--primary btn--sm" href="/staff/case/new">New case</a>
+        {% if staff_logout_available is defined and staff_logout_available(request) %}
+        <form method="post" action="/staff-logout" class="inline-form">
+          <button class="btn btn--ghost btn--sm" type="submit">Sign out</button>
+        </form>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+  {% endblock %}
+
+  <main class="container page">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block footer %}
+  <footer class="footer container">
+    <span>Yunaki intake prototype · guardrails in code, judgment with Isaiah &amp; Allison</span>
+  </footer>
+  {% endblock %}
+</body>
+</html>

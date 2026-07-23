@@ -41,30 +41,24 @@ desktop-build:
 	$(MAKE) desktop-sidecar
 	cd desktop/src-tauri && cargo tauri build
 
-# --- Demo week: integrated firm flow (our lane + Nanda's Yunaki-Yew) ---------
-# Prereqs: clone github.com/Nanda-Kiran/Yunaki-Yew to ~/Yunaki-Yew, check out
-# integration/yunaki-core-bridge, create .venv (python3.13) and install his
-# requirements + our demo package editable (see demo/README.md).
-YEW_REPO ?= $(HOME)/Yunaki-Yew
+# --- Demo week: integrated firm flow (Slack lane + intake workflow) ---------
+# The intake workflow (ported from Nanda's Yunaki-Yew) lives in
+# demo/intake_workflow and shares demo/yunaki.db with the agents.
 
-# Nanda's app wired to the shared DB: sends route through our sendgate,
-# handoffs open his cases, accepted intake lands in our case_history.
-yew:
-	cd $(YEW_REPO) && \
-	YUNAKI_DB=yew.db \
-	YUNAKI_SHARED_DB=$(CURDIR)/demo/yunaki.db \
-	YUNAKI_EMAIL_PROVIDER=sendgate \
-	YUNAKI_PORTAL_BASE=http://localhost:8801 \
-	.venv/bin/python -m uvicorn app.main:app --port 8801
+# The intake app: staff dashboard + client portal, wired natively to /core.
+# Sends route through the sendgate by default (Slack approval + LIVE_MODE).
+intake:
+	cd demo && YUNAKI_PORTAL_BASE=http://localhost:8801 \
+	.venv/bin/python -m uvicorn intake_workflow.main:app --port 8801
 
 # Our Slack agent process (Bolt Socket Mode; needs tokens in demo/.env).
 slack:
 	cd demo && .venv/bin/python -m slack_agent.main
 
-# The whole firm demo: his portal + our Slack agent on one shared DB.
+# The whole firm demo: intake portal + Slack agent on one shared DB.
 firm-demo:
-	$(MAKE) -j2 yew slack
+	$(MAKE) -j2 intake slack
 
-# Live end-to-end proof of every bridge seam (no Slack/Gmail creds needed).
+# Live end-to-end proof of every integration seam (no Slack/Gmail creds needed).
 flow-smoke:
-	cd demo && YEW_REPO=$(YEW_REPO) .venv/bin/python -m scripts.integrated_flow_smoke
+	cd demo && .venv/bin/python -m scripts.integrated_flow_smoke

@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Your case · Yew Legal{% endblock %}
+{% block body_class %}app app--client{% endblock %}
+
+{% block header %}
+<header class="warmbar">
+  <div class="warmbar__inner container">
+    <div class="brand brand--client">
+      <span class="brand__mark">Yew Legal</span>
+      <span class="brand__sub">Your case with Allison</span>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% macro doc_form(item) %}
+<form class="upload-form" method="post"
+      action="/c/{{ token }}/item/{{ item.key }}/upload" enctype="multipart/form-data">
+  <label class="file-label">
+    <input type="file" name="file" required
+           accept=".pdf,.jpg,.jpeg,.png,image/*,application/pdf">
+    <span>Choose a photo or PDF</span>
+  </label>
+  <button class="btn btn--primary btn--block" type="submit">Upload</button>
+</form>
+{% endmacro %}
+
+{% macro question_form(item) %}
+{% set prev = (item.submissions[-1].answers if item.submissions else {}) or {} %}
+<form class="q-form" method="post" action="/c/{{ token }}/item/{{ item.key }}/answers">
+  {% for f in item.fields %}
+  {% set val = prev.get(f.key, '') %}
+  <div class="field">
+    <label for="{{ item.key }}_{{ f.key }}">
+      {{ f.label }}{% if f.required %} <span class="req">*</span>{% endif %}
+    </label>
+    {% if f.type == 'textarea' %}
+      <textarea id="{{ item.key }}_{{ f.key }}" name="{{ f.key }}" rows="2"
+                {% if f.required %}required{% endif %}>{{ val }}</textarea>
+    {% elif f.type == 'select' %}
+      <select id="{{ item.key }}_{{ f.key }}" name="{{ f.key }}" {% if f.required %}required{% endif %}>
+        <option value="" {% if not val %}selected{% endif %} disabled hidden>Choose…</option>
+        {% for opt in f.options %}
+          <option value="{{ opt }}" {% if val == opt %}selected{% endif %}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+    {% else %}
+      <input id="{{ item.key }}_{{ f.key }}" name="{{ f.key }}"
+             type="{{ 'date' if f.type == 'date' else 'text' }}" value="{{ val }}"
+             {% if f.required %}required{% endif %}
+             {% if f.pattern %}pattern="{{ f.pattern }}"{% endif %}>
+    {% endif %}
+    {% if f.hint %}<div class="muted small">{{ f.hint }}</div>{% endif %}
+    {% if f.pattern and not f.hint %}<div class="muted small">Format: {{ f.pattern }}</div>{% endif %}
+  </div>
+  {% endfor %}
+  <button class="btn btn--primary btn--block" type="submit">Save answers</button>
+</form>
+{% endmacro %}
+
+{% macro item_card(item, show_form) %}
+{% set sub = item.submissions[-1] if item.submissions else none %}
+{% set chip = state_chip(item.state) %}
+<div class="card item">
+  <div class="item__head">
+    <div>
+      <strong>{{ item.label }}</strong>
+      {% if not item.required %}<span class="pill pill--muted">optional</span>{% endif %}
+      {% if item.description %}<div class="muted small">{{ item.description }}</div>{% endif %}
+    </div>
+    <span class="chip {{ chip.cls }}">{{ chip.label }}</span>
+  </div>
+
+  {% if item.latest_return_reason %}
+    <div class="return-note"><strong>Please fix:</strong> {{ item.latest_return_reason }}</div>
+  {% endif %}
+
+  {% if sub and sub.autocheck and sub.autocheck.findings %}
+    <ul class="findings">
+      {% for f in sub.autocheck.findings %}
+        <li>{{ f.message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if sub and sub.filename %}
+    <div class="muted small">Last upload: {{ sub.filename }} · {{ sub.submitted_at | fmt_dt }}</div>
+  {% endif %}
+
+  {% if show_form %}
+    {% if item.kind.value == 'question_section' %}
+      {{ question_form(item) }}
+    {% else %}
+      {{ doc_form(item) }}
+    {% endif %}
+  {% else %}
+    <div class="done-note">✓ Accepted — nothing more needed here.</div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% block content %}
+<div class="client-head">
+  <h1>Hello {{ party.full_name.split(' ')[0] if party.full_name else 'there' }},</h1>
+  <p>Here is everything for <strong>{{ case.title }}</strong>. Upload from your phone — we check each
+  file as it comes in and tell you right away if something needs a retake.</p>
+</div>
+
+<div class="progress progress--lg" role="img" aria-label="{{ progress.percent }} percent complete">
+  <div class="progress__bar" style="width: {{ progress.percent }}%"></div>
+</div>
+<p class="muted small">{{ progress.accepted }}/{{ progress.required_total }} items accepted · {{ progress.percent }}% done</p>
+
+{% if thin_categories %}
+<div class="hint-card">
+  <strong>Marriage evidence — a few categories look thin:</strong>
+  <ul>
+    {% for c in thin_categories %}
+      <li>{{ c.label }} <span class="muted small">({{ c.accepted }}/{{ c.min_items }} accepted)</span></li>
+    {% endfor %}
+  </ul>
+  <p class="muted small">Adding evidence in these areas strengthens your case the most.</p>
+</div>
+{% endif %}
+
+{% if filing_views %}
+<section class="group filing-status">
+  <h2>Your filing status</h2>
+  <p class="muted small">Here's where things stand with U.S. Citizenship and Immigration Services (USCIS).</p>
+  {% for fv in filing_views %}
+  <div class="card filing-card">
+    <div class="filing-card__head">
+      <strong>{{ fv.form_type }}</strong>
+      {% if fv.latest_at %}<span class="muted small">Last update {{ fv.latest_at | fmt_dt }}</span>{% endif %}
+    </div>
+
+    <ol class="steps">
+      {% for s in fv.steps %}
+      <li class="step step--{{ s.state }}{% if s.rfe %} step--rfe{% endif %}">
+        <span class="step__dot" aria-hidden="true"></span>
+        <span class="step__label">
+          {{ s.label }}
+          {% if s.state == 'current' %}<span class="step__now">· where things are now</span>{% endif %}
+        </span>
+        {% if s.at %}<span class="step__date muted small">{{ s.at | fmt_date }}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+
+    {% if fv.receipt_number %}
+    <div class="receipt-row">
+      <span>Your receipt number: <code class="mono">{{ fv.receipt_number }}</code></span>
+      <a href="{{ uscis_url }}" target="_blank" rel="noopener">Check your case status on the USCIS website ↗</a>
+    </div>
+    <p class="muted small">You can check this yourself anytime — we'll also keep you posted.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if groups.needs_attention %}
+<section class="group group--attention">
+  <h2>Needs your attention</h2>
+  <p class="muted small">We sent these back with a note — please take another look.</p>
+  {% for item in groups.needs_attention %}{{ item_card(item, true) }}{% endfor %}
+</section>
+{% endif %}
+
+{% if groups.todo %}
+<section class="group">
+  <h2>To-do</h2>
+  {% for item in groups.todo %}{{ item_card(item, true) }}{% endfor %}
+</section>
+{% endif %}
+
+{% if groups.in_review %}
+<section class="group">
+  <h2>Submitted — we're reviewing</h2>
+  <p class="muted small">You've sent these in. You can re-upload if you spot a problem.</p>
+  {% for item in groups.in_review %}{{ item_card(item, true) }}{% endfor %}
+</section>
+{% endif %}
+
+{% if groups.done %}
+<section class="group group--done">
+  <h2>Done</h2>
+  {% for item in groups.done %}{{ item_card(item, false) }}{% endfor %}
+</section>
+{% endif %}
+{% endblock %}

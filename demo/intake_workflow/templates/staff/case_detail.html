@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+{% block title %}{{ case.title }} · Yunaki{% endblock %}
+
+{% macro submission_summary(item) %}
+  {% set sub = item.submissions[-1] if item.submissions else none %}
+  {% if sub %}
+    <div class="submission">
+      {% if sub.filename %}
+        <div class="submission__file">📎 {{ sub.filename }}</div>
+      {% elif sub.answers %}
+        <dl class="answers">
+          {% for f in item.fields %}
+            {% if sub.answers.get(f.key) %}
+              <div><dt>{{ f.label }}</dt><dd>{{ sub.answers.get(f.key) }}</dd></div>
+            {% endif %}
+          {% endfor %}
+        </dl>
+      {% endif %}
+      <div class="muted small">Submitted {{ sub.submitted_at | fmt_dt }}</div>
+      {% if sub.autocheck and sub.autocheck.layer == 2 %}
+        <div class="small"><span class="pill pill--attention">AI check (layer 2)</span></div>
+      {% endif %}
+      {% if sub.autocheck and sub.autocheck.findings %}
+        <ul class="findings">
+          {% for f in sub.autocheck.findings %}
+            <li><span class="findings__code">{{ f.code }}</span> {{ f.message }}</li>
+          {% endfor %}
+        </ul>
+      {% elif sub.autocheck %}
+        <div class="muted small">Auto-check passed (layer {{ sub.autocheck.layer }}).</div>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="muted small">Nothing submitted yet.</div>
+  {% endif %}
+{% endmacro %}
+
+{% block content %}
+{% set badge = stage_badge(progress.stage) %}
+{% set MS_LABELS = {'filed':'Filed','receipt':'Receipt','biometrics':'Biometrics','rfe':'RFE','interview':'Interview','approved':'Approved','denied':'Denied'} %}
+{% set filing_error = request.query_params.get('filing_error') %}
+{% if filing_error %}
+<div class="flash flash--warn">{{ filing_error }}</div>
+{% endif %}
+{% set layer2_flash = request.query_params.get('layer2') %}
+{% if layer2_flash == 'nokey' %}
+<div class="flash" style="background: var(--warn-soft); color: var(--warn); border: 1px solid #e6d5b0;">
+  AI cross-checks are unavailable — <strong>ANTHROPIC_API_KEY</strong> isn't configured on the server.
+</div>
+{% elif layer2_flash is not none %}
+<div class="flash flash--ok">
+  AI cross-checks ran on {{ layer2_flash }} item{{ 's' if layer2_flash != '1' else '' }}.
+</div>
+{% endif %}
+<div class="page-head">
+  <div>
+    <a class="muted small" href="/staff">← All cases</a>
+    <h1>{{ case.title }}</h1>
+    <p class="muted">Opened {{ case.created_at | fmt_dt }}{% if case.consult_notes %} · {{ case.consult_notes }}{% endif %}</p>
+  </div>
+  <span class="badge {{ badge.cls }} badge--lg">{{ badge.label }}</span>
+</div>
+
+<div class="progress progress--lg" role="img" aria-label="{{ progress.percent }} percent complete">
+  <div class="progress__bar" style="width: {{ progress.percent }}%"></div>
+</div>
+<p class="muted small">{{ progress.accepted }}/{{ progress.required_total }} required items accepted · {{ progress.percent }}%</p>
+
+<section class="panel">
+  <h2>Magic links</h2>
+  <p class="muted small">No email is sent in the prototype — copy each link to the client.</p>
+  <div class="link-grid">
+    {% for party in case.parties %}
+    <div class="card link-card">
+      <div class="link-card__head">
+        <strong>{{ party.full_name }}</strong>
+        <span class="pill">{{ party.role.value }}</span>
+      </div>
+      <div class="muted small">{{ party.email }}</div>
+      {% set url = base_url ~ '/c/' ~ party.token %}
+      <div class="copy-row">
+        <input class="copy-input" type="text" readonly value="{{ url }}"
+               onclick="this.select()" aria-label="Magic link for {{ party.full_name }}">
+        <button class="btn btn--sm btn--ghost" type="button"
+                onclick="navigator.clipboard.writeText('{{ url }}'); this.textContent='Copied';">Copy</button>
+      </div>
+      <a class="link-strong small" href="/c/{{ party.token }}" target="_blank" rel="noopener">Open portal ↗</a>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Bona fide marriage evidence</h2>
+  <p class="muted small">Coverage meter — the same view the client sees. Met when enough categories clear the bar.</p>
+  <div class="coverage {{ 'coverage--met' if progress.coverage_met else '' }}">
+    {% for cov in progress.coverage %}
+    <div class="coverage__row {{ 'is-met' if cov.met else 'is-thin' }}">
+      <div class="coverage__label">
+        {{ cov.label }}
+        {% if cov.met %}<span class="tick">✓</span>{% endif %}
+      </div>
+      <div class="coverage__count">{{ cov.accepted }}/{{ cov.min_items }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="muted small">
+    {% if progress.coverage_met %}Coverage is sufficient across categories.
+    {% else %}Not enough categories cleared yet — thin areas are highlighted.{% endif %}
+  </p>
+</section>
+
+{% if i751 %}
+<section class="panel">
+  <h2>I-751 dates</h2>
+  <div class="date-grid">
+    <div class="card"><div class="muted small">Green card expires</div><strong>{{ i751.gc_expires | fmt_date }}</strong></div>
+    <div class="card"><div class="muted small">Filing window opens</div><strong>{{ i751.window_opens | fmt_date }}</strong></div>
+    <div class="card"><div class="muted small">Start collecting docs</div><strong>{{ i751.collect_docs_from | fmt_date }}</strong></div>
+  </div>
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2>Filings</h2>
+  <p class="muted small">USCIS submissions and their status.
+    {% if packet_form_types %}Form-prep packets:
+      {% for ft in packet_form_types %}<a href="/staff/case/{{ case.id }}/packet/{{ ft }}">{{ ft }} ↗</a>{% if not loop.last %} · {% endif %}{% endfor %}
+    {% endif %}
+  </p>
+
+  {% if not case.filings %}
+    <div class="card muted">No filings recorded yet.</div>
+  {% else %}
+    {% for f in case.filings %}
+    <div class="card filing">
+      <div class="filing__head">
+        <div>
+          <strong>{{ f.form_type }}</strong>
+          <span class="muted small">filed {{ f.filed_on | fmt_date }}</span>
+        </div>
+        <span class="chip chip--ms">{{ MS_LABELS.get(f.status.value, f.status.value) }}</span>
+      </div>
+      <div class="filing__receipt small">
+        {% if f.receipt_number %}
+          Receipt <code class="mono">{{ f.receipt_number }}</code>
+        {% else %}
+          <span class="muted">No receipt number yet.</span>
+        {% endif %}
+      </div>
+
+      {% if f.updates %}
+      <ol class="filing-updates">
+        {% for u in f.updates %}
+        <li>
+          <span class="pill pill--muted">{{ MS_LABELS.get(u.milestone.value, u.milestone.value) }}</span>
+          <span class="muted small">{{ u.at | fmt_dt }}</span>
+          {% if u.note %}<div class="small">{{ u.note }}</div>{% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+      {% endif %}
+
+      <details class="filing-forms">
+        <summary class="small">Update this filing</summary>
+
+        <form method="post" action="/staff/case/{{ case.id }}/filings/{{ f.id }}/receipt" class="filing-form">
+          <label class="small">Set / replace receipt number</label>
+          <div class="return-form">
+            <input class="input-inline mono" type="text" name="receipt_number" required
+                   placeholder="e.g. IOE0123456789" value="{{ f.receipt_number or '' }}">
+            <button class="btn btn--ghost btn--sm" type="submit">Save receipt</button>
+          </div>
+        </form>
+
+        <form method="post" action="/staff/case/{{ case.id }}/filings/{{ f.id }}/status" class="filing-form">
+          <label class="small">Post a status update</label>
+          <div class="field">
+            <select name="milestone" required aria-label="Milestone">
+              {% for m in milestones %}
+              <option value="{{ m.value }}" {% if m.value == f.status.value %}selected{% endif %}>{{ MS_LABELS.get(m.value, m.value) }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <input type="text" name="note" placeholder="Staff note (optional, not shown to the client)">
+          </div>
+          <label class="check-row small">
+            <input type="checkbox" name="notify" checked>
+            Draft a client notification for this update
+          </label>
+          <button class="btn btn--primary btn--sm" type="submit">Save status</button>
+        </form>
+      </details>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <details class="filing-forms filing-add">
+    <summary class="small">Record a new filing</summary>
+    <form method="post" action="/staff/case/{{ case.id }}/filings" class="filing-form">
+      <div class="field">
+        <label class="small">Form type</label>
+        <select name="form_type" required>
+          {% for ft in filing_form_types %}<option value="{{ ft }}">{{ ft }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="small">Filed on</label>
+        <input type="date" name="filed_on" required>
+      </div>
+      <div class="field">
+        <label class="small">Receipt number <span class="muted">(optional)</span></label>
+        <input class="mono" type="text" name="receipt_number" placeholder="e.g. IOE0123456789">
+      </div>
+      <button class="btn btn--primary btn--sm" type="submit">Add filing</button>
+    </form>
+  </details>
+</section>
+
+<section class="panel">
+  <h2>Follow-up approval queue</h2>
+  {% if not drafted %}
+    <div class="card muted">No drafted follow-ups waiting. Run the scheduler tick from the dashboard when a client goes quiet.</div>
+  {% else %}
+    {% for o in drafted %}
+    <div class="card outreach">
+      <div class="outreach__head">
+        {% if o.rung.value == 'status_update' %}
+          <span class="pill pill--info">Status update</span>
+        {% else %}
+          <span class="pill pill--attention">{{ rung_label(o.rung) }}</span>
+        {% endif %}
+        <span class="muted small">to {{ o.party_role.value }} · drafted {{ o.created_at | fmt_dt }}</span>
+      </div>
+      <div class="outreach__subject"><strong>Subject:</strong> {{ o.subject }}</div>
+      <pre class="outreach__body">{{ o.body }}</pre>
+      <div class="outreach__actions">
+        <form method="post" action="/staff/case/{{ case.id }}/outreach/{{ o.id }}/approve">
+          <button class="btn btn--primary btn--sm" type="submit">Approve &amp; mark sent</button>
+        </form>
+        <form method="post" action="/staff/case/{{ case.id }}/outreach/{{ o.id }}/dismiss">
+          <button class="btn btn--ghost btn--sm" type="submit">Dismiss</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Checklist</h2>
+  <div class="layer2-run">
+    <form method="post" action="/staff/case/{{ case.id }}/layer2" class="inline-form">
+      <button class="btn btn--sm btn--ghost" type="submit">Run AI cross-checks</button>
+    </form>
+    <span class="muted small">Deep-checks submitted documents against the questionnaires — flags only, never auto-rejects.</span>
+  </div>
+  {% for party in case.parties %}
+  <h3 class="party-title">{{ party.full_name }} <span class="pill">{{ party.role.value }}</span></h3>
+  <div class="items">
+    {% for item in groups[party.role] %}
+    {% set chip = state_chip(item.state, staff=True) %}
+    <div class="card item">
+      <div class="item__head">
+        <div>
+          <strong>{{ item.label }}</strong>
+          {% if not item.required %}<span class="pill pill--muted">optional</span>{% endif %}
+          {% if item.category %}<span class="pill pill--muted">{{ item.category }}</span>{% endif %}
+          {% if item.description %}<div class="muted small">{{ item.description }}</div>{% endif %}
+        </div>
+        <div class="chip-stack">
+          <span class="chip {{ chip.cls }}">{{ chip.label }}</span>
+          {% if item.attorney_review %}<span class="chip chip--attorney">Attorney review</span>{% endif %}
+        </div>
+      </div>
+
+      {{ submission_summary(item) }}
+
+      {% if item.latest_return_reason %}
+        <div class="return-note"><strong>Returned:</strong> {{ item.latest_return_reason }}</div>
+      {% endif %}
+
+      {% if item.state.value in ('submitted', 'flagged', 'checked') %}
+      <div class="review-actions">
+        <form method="post" action="/staff/case/{{ case.id }}/item/{{ item.key }}/review" class="inline-form">
+          <input type="hidden" name="action" value="accepted">
+          <button class="btn btn--primary btn--sm" type="submit">Accept</button>
+        </form>
+        <form method="post" action="/staff/case/{{ case.id }}/item/{{ item.key }}/review" class="return-form">
+          <input type="hidden" name="action" value="returned">
+          <input class="input-inline" type="text" name="reason" required
+                 placeholder="Reason (shown to the client verbatim)">
+          <button class="btn btn--danger btn--sm" type="submit">Return</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</section>
+
+<section class="panel">
+  <h2>Case timeline</h2>
+  {% if not timeline %}
+    <div class="card muted">No timeline events yet.</div>
+  {% else %}
+  <ol class="timeline">
+    {% for ev in timeline %}
+    <li class="timeline__item">
+      <div class="timeline__ts muted small">{{ ev.ts | fmt_dt }}</div>
+      <div class="timeline__body">
+        <span class="pill pill--muted">{{ ev.kind }}</span>
+        {{ ev.summary }}
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+</section>
+{% endblock %}
