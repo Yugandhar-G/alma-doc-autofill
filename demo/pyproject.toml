@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "httpx>=0.27"]
 # The email-agent brain runs on the yunaki kernel deep-agent engine (deepagents +
 # langchain-google-genai on Gemini), which lives in the sibling backend package
 # and requires Python >=3.11. It is a PATH dependency installed editable, NOT a

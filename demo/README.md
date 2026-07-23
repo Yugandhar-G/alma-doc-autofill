@@ -15,6 +15,27 @@ cp .env.example .env              # fill in; never commit .env
 ```
 Run everything through `.venv/bin/python` (`python -m slack_agent.main`, pytest).
 
+## Integrated firm flow (with Nanda's Yunaki-Yew)
+
+Nanda's intake/case app connects through its opt-in bridge (branch
+`integration/yunaki-core-bridge` on github.com/Nanda-Kiran/Yunaki-Yew):
+handoffs open his cases and put his magic-link portal URLs into our
+`intake.url`; paralegal-accepted answers upsert our typed `case_history`;
+red-flags surface as `escalation.raised`; his outreach approvals create
+PENDING DraftActions through the SendgateProvider — delivery only via Slack
+approval + LIVE_MODE. One-time setup:
+
+```bash
+cd ~ && gh repo clone Nanda-Kiran/Yunaki-Yew
+cd Yunaki-Yew && git checkout integration/yunaki-core-bridge
+python3.13 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/pip install -e ../yunaki/demo   # our /core contracts
+```
+
+Then from the repo root: `make flow-smoke` (live end-to-end proof, no creds
+needed), `make yew` (his app on :8801 wired to the shared DB), or
+`make firm-demo` (his portal + our Slack agent together).
+
 ## What's here
 
 ### Agents (Workstream A)
