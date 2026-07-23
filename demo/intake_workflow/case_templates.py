@@ -38,28 +38,55 @@ MARRIAGE_AOS = CaseTemplate(
             key="pet_bio", label="Petitioner — Biographic questionnaire",
             kind=QS, assignee=P,
             fields=[
-                QuestionField(key="full_name", label="Full legal name"),
-                QuestionField(key="dob", label="Date of birth", type="date"),
-                QuestionField(key="phone", label="Phone number"),
-                QuestionField(key="address", label="Current home address", type="textarea"),
+                QuestionField(
+                    key="full_name", label="Full legal name",
+                    hint="Exactly as it appears on your passport or government ID.",
+                ),
+                QuestionField(
+                    key="dob", label="Date of birth", type="date",
+                    hint="The date on your passport or birth certificate.",
+                ),
+                QuestionField(
+                    key="phone", label="Phone number",
+                    hint="A number where we can reach you by text or call.",
+                ),
+                QuestionField(
+                    key="address", label="Current home address", type="textarea",
+                    hint="Street, unit, city, state, and ZIP.",
+                ),
             ],
         ),
         TemplateItem(
             key="ben_bio", label="Beneficiary — Biographic questionnaire",
             kind=QS, assignee=B,
             fields=[
-                QuestionField(key="full_name", label="Full legal name"),
-                QuestionField(key="dob", label="Date of birth", type="date"),
+                QuestionField(
+                    key="full_name", label="Full legal name",
+                    hint="Exactly as it appears on your passport.",
+                ),
+                QuestionField(
+                    key="dob", label="Date of birth", type="date",
+                    hint="The date on your passport or birth certificate.",
+                ),
                 QuestionField(
                     key="a_number", label="A-number", required=False,
                     pattern=r"^A?\d{8,9}$",
-                    hint="On any prior USCIS notice; starts with 'A'. Leave blank if none.",
+                    hint="On your green card or any USCIS notice — the letter A "
+                         "followed by 8 or 9 digits, e.g. A123456789. Leave blank "
+                         "if you don't have one.",
                 ),
                 QuestionField(
                     key="i94_number", label="Most recent I-94 number", required=False,
                     pattern=r"^[0-9A-Za-z]{11}$",
+                    hint="The 11-character number on your most recent I-94 record — "
+                         "find it under 'Get Most Recent I-94' at i94.cbp.dhs.gov. "
+                         "Leave blank if you're unsure.",
                 ),
-                QuestionField(key="last_entry", label="Date of last U.S. entry", type="date"),
+                QuestionField(
+                    key="last_entry", label="Date of last U.S. entry", type="date",
+                    hint="The date you most recently entered the U.S. — check the "
+                         "stamp in your passport or your I-94. Leave blank if unsure.",
+                ),
                 QuestionField(
                     key="current_status", label="Current immigration status",
                     type="select", options=["F-1", "H-1B", "B-1/B-2", "Other"],
@@ -70,8 +97,14 @@ MARRIAGE_AOS = CaseTemplate(
             key="marriage_details", label="Marriage details",
             kind=QS, assignee=P,
             fields=[
-                QuestionField(key="marriage_date", label="Date of marriage", type="date"),
-                QuestionField(key="marriage_place", label="City & state/country of marriage"),
+                QuestionField(
+                    key="marriage_date", label="Date of marriage", type="date",
+                    hint="The date on your marriage certificate.",
+                ),
+                QuestionField(
+                    key="marriage_place", label="City & state/country of marriage",
+                    hint="Where the ceremony took place, e.g. Austin, Texas.",
+                ),
                 QuestionField(
                     key="prior_marriages", label="Any prior marriages?",
                     type="select", options=["None", "Petitioner", "Beneficiary", "Both"],
@@ -82,11 +115,18 @@ MARRIAGE_AOS = CaseTemplate(
             key="ben_address_history", label="Beneficiary — Address history (last 5 years)",
             kind=QS, assignee=B,
             fields=[
-                QuestionField(key="current_address", label="Current address", type="textarea"),
-                QuestionField(key="moved_in", label="Date moved in", type="date"),
+                QuestionField(
+                    key="current_address", label="Current address", type="textarea",
+                    hint="Street, unit, city, state, and ZIP where you live now.",
+                ),
+                QuestionField(
+                    key="moved_in", label="Date moved in", type="date",
+                    hint="Roughly when you moved to this address is fine.",
+                ),
                 QuestionField(
                     key="previous_address", label="Previous address", type="textarea",
                     required=False,
+                    hint="Only if you moved within the last 5 years — leave blank otherwise.",
                 ),
             ],
         ),

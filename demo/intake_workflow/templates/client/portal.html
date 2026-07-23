@@ -13,13 +13,27 @@
 </header>
 {% endblock %}
 
+{# ---- autocomplete map by field key (set once, reused per field) ---- #}
+{% set AUTOCOMPLETE = {
+  'full_name': 'name',
+  'dob': 'bday',
+  'phone': 'tel',
+  'address': 'street-address',
+  'current_address': 'street-address',
+  'previous_address': 'street-address',
+  'email': 'email'
+} %}
+
 {% macro doc_form(item) %}
 <form class="upload-form" method="post"
       action="/c/{{ token }}/item/{{ item.key }}/upload" enctype="multipart/form-data">
-  <label class="file-label">
-    <input type="file" name="file" required
+  <label class="dropzone">
+    <input type="file" name="file" required data-filename
            accept=".pdf,.jpg,.jpeg,.png,image/*,application/pdf">
-    <span>Choose a photo or PDF</span>
+    <span class="dropzone__icon" aria-hidden="true">&#8682;</span>
+    <span class="dropzone__title">Take a photo or choose a PDF</span>
+    <span class="dropzone__hint">Clear, flat, all four corners visible.</span>
+    <span class="dropzone__file" data-filename-target hidden></span>
   </label>
   <button class="btn btn--primary btn--block" type="submit">Upload</button>
 </form>
@@ -28,32 +42,41 @@
 {% macro question_form(item) %}
 {% set prev = (item.submissions[-1].answers if item.submissions else {}) or {} %}
 <form class="q-form" method="post" action="/c/{{ token }}/item/{{ item.key }}/answers">
+  <fieldset class="field-legend">
+    {# The card header already shows the label; keep the legend for screen
+       readers only — sighted users shouldn't read every title twice. #}
+    <legend class="sr-only">{{ item.label }}</legend>
   {% for f in item.fields %}
   {% set val = prev.get(f.key, '') %}
+  {% set ac = AUTOCOMPLETE.get(f.key) %}
   <div class="field">
     <label for="{{ item.key }}_{{ f.key }}">
-      {{ f.label }}{% if f.required %} <span class="req">*</span>{% endif %}
+      {{ f.label }}{% if f.required %} <span class="req" aria-hidden="true">*</span>{% endif %}
     </label>
     {% if f.type == 'textarea' %}
       <textarea id="{{ item.key }}_{{ f.key }}" name="{{ f.key }}" rows="2"
+                {% if ac %}autocomplete="{{ ac }}"{% endif %}
                 {% if f.required %}required{% endif %}>{{ val }}</textarea>
     {% elif f.type == 'select' %}
       <select id="{{ item.key }}_{{ f.key }}" name="{{ f.key }}" {% if f.required %}required{% endif %}>
-        <option value="" {% if not val %}selected{% endif %} disabled hidden>Choose…</option>
+        <option value="" {% if not val %}selected{% endif %} disabled hidden>Choose&hellip;</option>
         {% for opt in f.options %}
           <option value="{{ opt }}" {% if val == opt %}selected{% endif %}>{{ opt }}</option>
         {% endfor %}
       </select>
     {% else %}
       <input id="{{ item.key }}_{{ f.key }}" name="{{ f.key }}"
-             type="{{ 'date' if f.type == 'date' else 'text' }}" value="{{ val }}"
+             type="{{ 'date' if f.type == 'date' else ('tel' if f.key == 'phone' else 'text') }}"
+             value="{{ val }}"
+             {% if ac %}autocomplete="{{ ac }}"{% endif %}
+             {% if f.key == 'phone' %}inputmode="tel"{% endif %}
              {% if f.required %}required{% endif %}
              {% if f.pattern %}pattern="{{ f.pattern }}"{% endif %}>
     {% endif %}
     {% if f.hint %}<div class="muted small">{{ f.hint }}</div>{% endif %}
-    {% if f.pattern and not f.hint %}<div class="muted small">Format: {{ f.pattern }}</div>{% endif %}
   </div>
   {% endfor %}
+  </fieldset>
   <button class="btn btn--primary btn--block" type="submit">Save answers</button>
 </form>
 {% endmacro %}
@@ -72,7 +95,7 @@
   </div>
 
   {% if item.latest_return_reason %}
-    <div class="return-note"><strong>Please fix:</strong> {{ item.latest_return_reason }}</div>
+    <div class="return-note"><strong>What to fix:</strong> {{ item.latest_return_reason }}</div>
   {% endif %}
 
   {% if sub and sub.autocheck and sub.autocheck.findings %}
@@ -100,16 +123,34 @@
 {% endmacro %}
 
 {% block content %}
-<div class="client-head">
-  <h1>Hello {{ party.full_name.split(' ')[0] if party.full_name else 'there' }},</h1>
-  <p>Here is everything for <strong>{{ case.title }}</strong>. Upload from your phone — we check each
-  file as it comes in and tell you right away if something needs a retake.</p>
+{% set remaining = progress.required_total - progress.accepted %}
+
+<div class="track" role="progressbar"
+     aria-valuenow="{{ progress.percent }}" aria-valuemin="0" aria-valuemax="100"
+     aria-label="Case progress: {{ progress.accepted }} of {{ progress.required_total }} items accepted">
+  <div class="track__inner container">
+    <span class="track__meter"><span class="track__fill" style="width: {{ progress.percent }}%"></span></span>
+    <span class="track__meta">
+      <strong>{{ progress.accepted }} of {{ progress.required_total }} accepted</strong>
+      <span class="track__msg">
+        {%- if progress.percent >= 100 -%}All done — Allison takes it from here
+        {%- elif progress.percent < 34 -%}Great start
+        {%- else -%}Almost there — {{ remaining }} to go
+        {%- endif -%}
+      </span>
+    </span>
+  </div>
 </div>
 
-<div class="progress progress--lg" role="img" aria-label="{{ progress.percent }} percent complete">
-  <div class="progress__bar" style="width: {{ progress.percent }}%"></div>
+<div class="client-head">
+  <h1>Hello {{ party.full_name.split(' ')[0] if party.full_name else 'there' }},</h1>
+  <p>Here is everything for <strong>{{ case.title }}</strong>. You can upload straight from your phone.</p>
+  <div class="reassure">
+    <span class="reassure__mark" aria-hidden="true">&#9670;</span>
+    <span>This is your private link — no account, no password needed. We check every file as it
+    comes in and tell you right away if something needs a retake.</span>
+  </div>
 </div>
-<p class="muted small">{{ progress.accepted }}/{{ progress.required_total }} items accepted · {{ progress.percent }}% done</p>
 
 {% if thin_categories %}
 <div class="hint-card">
@@ -123,10 +164,33 @@
 </div>
 {% endif %}
 
+{% if groups.needs_attention %}
+<section class="group group--attention" aria-labelledby="grp-attention">
+  <h2 id="grp-attention">Needs your attention</h2>
+  <p class="group__intro small">We sent these back with a note — please take another look.</p>
+  {% for item in groups.needs_attention %}{{ item_card(item, true) }}{% endfor %}
+</section>
+{% endif %}
+
+{% if groups.todo %}
+<section class="group" aria-labelledby="grp-todo">
+  <h2 id="grp-todo">To-do</h2>
+  {% for item in groups.todo %}{{ item_card(item, true) }}{% endfor %}
+</section>
+{% endif %}
+
+{% if groups.in_review %}
+<section class="group" aria-labelledby="grp-review">
+  <h2 id="grp-review">Submitted — we're reviewing</h2>
+  <p class="group__intro small">You've sent these in. You can re-upload if you spot a problem.</p>
+  {% for item in groups.in_review %}{{ item_card(item, true) }}{% endfor %}
+</section>
+{% endif %}
+
 {% if filing_views %}
-<section class="group filing-status">
-  <h2>Your filing status</h2>
-  <p class="muted small">Here's where things stand with U.S. Citizenship and Immigration Services (USCIS).</p>
+<section class="group filing-status" aria-labelledby="grp-filing">
+  <h2 id="grp-filing">Your filing status</h2>
+  <p class="group__intro small">Here's where things stand with U.S. Citizenship and Immigration Services (USCIS).</p>
   {% for fv in filing_views %}
   <div class="card filing-card">
     <div class="filing-card__head">
@@ -159,33 +223,15 @@
 </section>
 {% endif %}
 
-{% if groups.needs_attention %}
-<section class="group group--attention">
-  <h2>Needs your attention</h2>
-  <p class="muted small">We sent these back with a note — please take another look.</p>
-  {% for item in groups.needs_attention %}{{ item_card(item, true) }}{% endfor %}
-</section>
-{% endif %}
-
-{% if groups.todo %}
-<section class="group">
-  <h2>To-do</h2>
-  {% for item in groups.todo %}{{ item_card(item, true) }}{% endfor %}
-</section>
-{% endif %}
-
-{% if groups.in_review %}
-<section class="group">
-  <h2>Submitted — we're reviewing</h2>
-  <p class="muted small">You've sent these in. You can re-upload if you spot a problem.</p>
-  {% for item in groups.in_review %}{{ item_card(item, true) }}{% endfor %}
-</section>
-{% endif %}
-
 {% if groups.done %}
-<section class="group group--done">
-  <h2>Done</h2>
-  {% for item in groups.done %}{{ item_card(item, false) }}{% endfor %}
-</section>
+<details class="group group--done">
+  <summary class="group__summary">
+    <h2>Done</h2>
+    <span class="group__count">{{ groups.done|length }} accepted</span>
+  </summary>
+  <div class="items">
+    {% for item in groups.done %}{{ item_card(item, false) }}{% endfor %}
+  </div>
+</details>
 {% endif %}
 {% endblock %}

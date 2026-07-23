@@ -51,15 +51,25 @@ def shared_conn() -> sqlite3.Connection:
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")
     conn.execute("PRAGMA busy_timeout = 5000")
+    ensure_tables(conn)
     return conn
 
 
 def ensure_tables(conn: sqlite3.Connection) -> None:
     """Create the integration-owned aux tables in the shared DB. Idempotent.
 
+    Also ensures the /core contract schema itself (event, case, draft, ...):
+    on a fresh DB the intake app may be the FIRST process to touch the file,
+    and the integration layer reads/writes /core tables — without this, a
+    standalone `make intake` on a new DB would poll a nonexistent `event`
+    table forever.
+
     - ``iw_case_map``   maps the intake app's local case id <-> our /core case id (1:1).
     - ``iw_bridge_state`` holds small integration cursors (the event-poll high-water).
     """
+    from core.db import init_schema
+
+    init_schema(conn)
     conn.executescript(
         """
         CREATE TABLE IF NOT EXISTS iw_case_map (
