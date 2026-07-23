@@ -79,6 +79,8 @@ checklist_item(id, intake_id, seq, label, mandatory_to_file, state: missing|uplo
 ```
 Seed data: ONE fictional marriage case ("Ravi Kumar" petitioner / "Mei Lin" beneficiary — never real client names), checklist labels copied verbatim from Alison's real form (see UI_DataModel_Reference §2).
 
+**Amendment (Jul 23 scope change, pending Nanda ack):** adds a `case_history` table + `core/case_history.py` (models mirrored from the firm's two intake questionnaires + `upsert_history`/`get_history` store, one current record per `(case, role)`) + a new EventType `case_history.updated`. Integration seam: Workstream B's intake form-submit endpoint calls `core.case_history.upsert_history` to fill the record; `uscis_case_number`/`case_status` are enrichment fields left null at handoff. Seed now writes stub petitioner + beneficiary history rows carrying firm case number `YIL-2026-0001`.
+
 ### 1.4 Config / env (single `.env`, never committed)
 
 ```

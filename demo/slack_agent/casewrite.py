@@ -7,6 +7,13 @@ the frozen pydantic models (core.models) and inserting into the core-owned
 tables — reading the schema, writing rows, never editing /core code. Every value
 that the parser returned as null stays null (NULL OVER GUESS, §4.3); the caller
 turns those nulls into explicit "reply with it" asks.
+
+On handoff we also mint ONE firm case number (core.case_history.next_case_number)
+per new case and open a case-history stub (core.case_history.create_stub) per
+party, seeded with only the values the parse actually carried — a null stays a
+null there too. The case number leads the captured summary so it surfaces in the
+thread reply. Stub creation failure is loud (the exception propagates), never
+swallowed.
 """
 
 from __future__ import annotations
@@ -38,6 +45,7 @@ class HandoffResult:
     parties: list[PartyRecord]
     captured_lines: list[str]
     missing: list[str]
+    case_number: str
 
 
 def _display_name(first: str | None, last: str | None) -> str:
@@ -64,6 +72,13 @@ def create_handoff_case(conn: sqlite3.Connection, parsed: HandoffParse) -> Hando
         "VALUES (?, ?, ?, ?, ?)",
         (case.id, case.name, case.process_type, case.stage, case.created_at),
     )
+
+    # Lazy import breaks any import-time coupling to the case-history layer
+    # (built in parallel) and keeps this module importable before it lands.
+    from core import case_history
+
+    # ONE firm case number per new case, shared by every party stub below.
+    case_number = case_history.next_case_number(conn)
 
     party_records: list[PartyRecord] = []
     captured_lines: list[str] = []
@@ -124,6 +139,21 @@ def create_handoff_case(conn: sqlite3.Connection, parsed: HandoffParse) -> Hando
             ),
         )
 
+        # Firm case-history stub for this party — idempotent per (case, role).
+        # Values come straight from the parse: a None stays None (NULL OVER
+        # GUESS). Failure here must be loud, so the exception propagates.
+        case_history.create_stub(
+            conn,
+            case_id=case.id,
+            role=parsed_party.role,
+            first_name=parsed_party.first_name,
+            last_name=parsed_party.last_name,
+            email=parsed_party.email,
+            phone=parsed_party.phone,
+            case_number=case_number,
+            actor="agent:slack",
+        )
+
         display = _display_name(parsed_party.first_name, parsed_party.last_name)
         captured_lines.append(f"{parsed_party.role}: {display}")
 
@@ -141,9 +171,14 @@ def create_handoff_case(conn: sqlite3.Connection, parsed: HandoffParse) -> Hando
             missing.append(f"{display} {field}")
 
     conn.commit()
+    # The firm case number leads the captured summary so the thread reply shows
+    # it up top ("Case number: YIL-2026-NNNN"); it flows through the untouched
+    # handoff_agent -> blocks.handoff_summary_blocks path as a captured line.
+    captured_lines = [f"Case number: {case_number}", *captured_lines]
     return HandoffResult(
         case=case,
         parties=party_records,
         captured_lines=captured_lines,
         missing=missing,
+        case_number=case_number,
     )

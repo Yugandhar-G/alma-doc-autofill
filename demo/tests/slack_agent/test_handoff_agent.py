@@ -73,13 +73,15 @@ def test_both_parties_create_case_record_terminal(db, slack, run, wire_agent):
     events = query_events(db, type="case.handoff_received")
     assert len(events) == 1
     assert events[0].case_id == case_id
-    assert events[0].payload["parties"] == 2
+    assert events[0].payload["parties"] == 2  # real party count, not line count
     assert events[0].payload["process_type_known"] is True
     assert events[0].payload["missing_count"] >= 2  # both phones null
 
-    # Thread reply posted in-thread, listing the null (phone) asks.
+    # Thread reply posted in-thread, listing the null (phone) asks and the
+    # assigned firm case number as a captured line.
     assert slack.posts[0]["thread_ts"] == "500.1"
     assert "phone" in _blocks_text(slack.posts)
+    assert "Case number: YIL-" in _blocks_text(slack.posts)
 
     # Thread mapping stored + transcript persisted.
     assert threads.get_thread(db, case_id) == {"channel": "C_CASES", "thread_ts": "500.1"}

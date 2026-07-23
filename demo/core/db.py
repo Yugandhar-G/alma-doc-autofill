@@ -90,6 +90,29 @@ def _ddl() -> str:
         state             TEXT NOT NULL CHECK (state IN ({_sql_enum(CHECKLIST_STATES)}))
     );
 
+    -- Case history: one current record per (case_id, role); updates overwrite.
+    -- Mirrors the firm's two eImmigration questionnaires; the event bus is the
+    -- audit trail (Jul 23 scope change, pending Nanda ack).
+    CREATE TABLE IF NOT EXISTS case_history (
+        id                TEXT PRIMARY KEY,
+        case_id           TEXT NOT NULL REFERENCES "case"(id),
+        role              TEXT NOT NULL CHECK (role IN ({_sql_enum(PARTY_ROLES)})),
+        case_number       TEXT,
+        uscis_case_number TEXT,
+        case_status       TEXT,
+        data              TEXT NOT NULL DEFAULT '{{}}',
+        created_at        TEXT NOT NULL,
+        updated_at        TEXT NOT NULL,
+        UNIQUE (case_id, role)
+    );
+    CREATE INDEX IF NOT EXISTS idx_case_history_case ON case_history(case_id);
+
+    -- Monotonic firm case-number sequence, one counter per calendar year.
+    CREATE TABLE IF NOT EXISTS case_history_counter (
+        year TEXT PRIMARY KEY,
+        seq  INTEGER NOT NULL
+    );
+
     -- §1.1 event bus. type CHECK is the schema-enforced closed enum.
     CREATE TABLE IF NOT EXISTS event (
         id      TEXT PRIMARY KEY,

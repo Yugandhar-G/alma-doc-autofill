@@ -106,9 +106,13 @@ def test_full_dod_chain(db, slack, run, wire_agent, monkeypatch):
     assert result["mocked"] is True
     assert drafts.get_draft(db, draft.id).state == "sent"
 
-    # 5. Event log shows the full DoD chain in order.
+    # 5. Event log shows the full DoD chain in order. casewrite opens a
+    #    case-history stub per party first (each emits case_history.updated), so
+    #    filter those out to assert the DoD chain proper.
     chain = [e.type for e in query_events(db, case_id=case_id)]
-    assert chain == [
+    assert chain.count("case_history.updated") == 2  # one stub per party
+    core_chain = [t for t in chain if t != "case_history.updated"]
+    assert core_chain == [
         "case.handoff_received",
         "draft.created",
         "draft.approved",

@@ -113,6 +113,7 @@ def test_no_send_tool_in_grant_set(db: sqlite3.Connection) -> None:
         "gmail_search",
         "gmail_read_message",
         "create_email_draft",
+        "get_case_history",
     }
 
 
@@ -204,3 +205,87 @@ def test_gmail_unconfigured_degrades_to_honest_string(db: sqlite3.Connection) ->
     tools, _ = _tools(ToolDeps(conn=db, gmail_service_factory=_boom))
     out = _invoke(tools["gmail_search"], query="anything")
     assert out.startswith("GMAIL_UNAVAILABLE")
+
+
+# --------------------------------------------------------------------------- #
+# get_case_history — deterministic reads, "not on file" discipline
+#
+# Overview / section / not-applicable tests seed the store through the REAL
+# case-history layer (core.case_history), so they are BLOCKED until that module
+# lands (it is built in parallel). They are written now against its frozen
+# interface. The no-match and unknown-section paths never touch that layer, so
+# they run today.
+# --------------------------------------------------------------------------- #
+
+_HIST_CASE_ID = "case_hist_demo"
+_HIST_CASE_NAME = "Ravi Kumar / Mei Lin"
+
+
+def _seed_case_only(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        'INSERT INTO "case" (id, name, process_type, stage, created_at) '
+        "VALUES (?, ?, ?, ?, ?)",
+        (_HIST_CASE_ID, _HIST_CASE_NAME, "I-130/I-485",
+         "Handoff received", "2026-01-01T00:00:00+00:00"),
+    )
+    conn.commit()
+
+
+def _seed_history(conn: sqlite3.Connection) -> str:
+    """Case row + one shared firm case number + a petitioner/beneficiary stub,
+    via the real case-history layer. Returns the case number."""
+    from core.case_history import create_stub, next_case_number
+
+    _seed_case_only(conn)
+    number = next_case_number(conn)
+    create_stub(
+        conn, case_id=_HIST_CASE_ID, role="petitioner",
+        first_name="Ravi", last_name="Kumar",
+        email="ravi.kumar.demo@example.com", phone=None, case_number=number,
+    )
+    create_stub(
+        conn, case_id=_HIST_CASE_ID, role="beneficiary",
+        first_name="Mei", last_name="Lin",
+        email="mei.lin.demo@example.com", phone=None, case_number=number,
+    )
+    return number
+
+
+def test_get_case_history_no_match_is_honest(db: sqlite3.Connection) -> None:
+    tools, _ = _tools(ToolDeps(conn=db))
+    out = _invoke(tools["get_case_history"], case_query="Nobody")
+    assert out.startswith("NO_MATCH")
+
+
+def test_get_case_history_unknown_section_lists_valid_sections(db: sqlite3.Connection) -> None:
+    _seed_case_only(db)  # resolvable case; unknown section errors before any store read
+    tools, _ = _tools(ToolDeps(conn=db))
+    out = _invoke(tools["get_case_history"], case_query="Kumar", section="banana")
+    assert out.startswith("UNKNOWN_SECTION")
+    assert "identity" in out and "immigration" in out and "status" in out
+
+
+def test_get_case_history_overview_case_number_and_not_on_file(db: sqlite3.Connection) -> None:
+    number = _seed_history(db)
+    tools, _ = _tools(ToolDeps(conn=db))
+    out = _invoke(tools["get_case_history"], case_query="Kumar")
+    assert f"Case number: {number}" in out
+    assert "USCIS case number: not on file" in out  # never estimated
+    assert "Case status: not on file" in out
+    assert "Ravi Kumar" in out and "Mei Lin" in out
+
+
+def test_get_case_history_section_slice_renders_both_roles(db: sqlite3.Connection) -> None:
+    _seed_history(db)
+    tools, _ = _tools(ToolDeps(conn=db))
+    out = _invoke(tools["get_case_history"], case_query="Kumar", section="identity")
+    assert "Petitioner:" in out and "Beneficiary:" in out
+    assert "Ravi" in out  # legal name rendered from the stub
+    assert "not on file" in out  # absent scalars (SSN, DOB, ...) never guessed
+
+
+def test_get_case_history_immigration_not_applicable_to_petitioner(db: sqlite3.Connection) -> None:
+    _seed_history(db)
+    tools, _ = _tools(ToolDeps(conn=db))
+    out = _invoke(tools["get_case_history"], case_query="Kumar", section="immigration")
+    assert "not applicable to the petitioner record" in out

@@ -94,10 +94,17 @@ def test_handoff_creates_case_parties_intakes_and_event(db, slack, run, wire_age
     states = {r["state"] for r in db.execute("SELECT state FROM intake WHERE case_id = ?", (case_id,))}
     assert states == {"sent"}
 
+    # casewrite now opens a case-history stub per party (each emits
+    # case_history.updated) before handoff_agent emits case.handoff_received.
     events = query_events(db, case_id=case_id)
-    assert [e.type for e in events] == ["case.handoff_received"]
-    assert events[0].payload["parties"] == 2
-    assert events[0].payload["process_type_known"] is True
+    assert [e.type for e in events] == [
+        "case_history.updated",
+        "case_history.updated",
+        "case.handoff_received",
+    ]
+    handoff = query_events(db, type="case.handoff_received")[0]
+    assert handoff.payload["parties"] == 2  # real party count, not line count
+    assert handoff.payload["process_type_known"] is True
 
     assert slack.posts[0]["thread_ts"] == "200.2"
 
@@ -111,6 +118,37 @@ def test_handoff_missing_phone_is_asked_not_invented(db, slack, run, wire_agent)
     )
     phones = [r["phone"] for r in db.execute("SELECT phone FROM client")]
     assert phones == [None, None]
+
+
+def test_handoff_creates_case_history_stubs_with_shared_case_number(db, slack, run, wire_agent):
+    """Round-trip through the canned parser (wire_agent + ScriptModel from
+    conftest): case created -> 2 case-history stubs -> one shared firm case
+    number -> the number shows as a captured line in the Slack reply.
+
+    BLOCKED on core.case_history (built in parallel) until it lands: casewrite
+    now calls next_case_number + create_stub on every handoff."""
+    import json
+
+    from core.case_history import get_history
+
+    wire_agent(_both_parties_script())
+    case_id = run(
+        handle_handoff_message(
+            conn=db, client=slack, channel="C1", message_ts="300.3",
+            text="New marriage case ...",
+        )
+    )
+    assert case_id is not None
+
+    records = get_history(db, case_id)
+    assert {r.role for r in records} == {"petitioner", "beneficiary"}
+    numbers = {r.case_number for r in records}
+    assert len(numbers) == 1  # one shared case number across both stubs
+    number = numbers.pop()
+    assert number.startswith("YIL-")
+
+    reply = json.dumps([p.get("blocks") for p in slack.posts])
+    assert f"Case number: {number}" in reply
 
 
 # --- @yunaki-only routing: handoff vs question discrimination (Jul 22) ---

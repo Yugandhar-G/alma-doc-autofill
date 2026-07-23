@@ -49,7 +49,15 @@ Run everything through `.venv/bin/python` (`python -m slack_agent.main`, pytest)
 - `core/sendgate.py` — the LIVE_MODE gate (§4.1). **Every** outbound adapter routes
   through `execute_draft`. Default mock: writes `outbox`, never sends.
 - `core/config.py` — `.env` loader for the §1.4 vars.
-- `seed/seed_case.py` — idempotent fictional marriage case (Ravi Kumar / Mei Lin).
+- `core/case_history.py` — shared case-history schema mirrored from the firm's two
+  intake questionnaires (petitioner + beneficiary). One current record per
+  `(case, role)`; `upsert_history` overwrites on `(case_id, role)`. Records start as
+  stubs at handoff carrying the firm case number; Nanda's intake form-submit endpoint
+  (Workstream B) calls `upsert_history` to fill them in. `uscis_case_number` +
+  `case_status` are enrichment fields (null until the receipt lands, never guessed).
+  The slack agent reads history via `get_history`.
+- `seed/seed_case.py` — idempotent fictional marriage case (Ravi Kumar / Mei Lin),
+  including seeded petitioner + beneficiary case-history records.
 - `scripts/check_no_real_pii.py` — pre-commit grep for real client names (§4.4).
 
 ## Run

@@ -110,6 +110,9 @@ class _Terminal:
     captured_lines: list[str] = field(default_factory=list)
     missing: list[str] = field(default_factory=list)
     questions: list[str] = field(default_factory=list)
+    # Real party count for the event payload. captured_lines is NOT a proxy for
+    # it anymore — casewrite leads those lines with the firm case number.
+    parties_count: int = 0
 
 
 # --------------------------------------------------------------------------- #
@@ -213,6 +216,7 @@ def _build_create_case_record(conn: sqlite3.Connection, terminal: _Terminal):
         terminal.process_type = case.process_type
         terminal.captured_lines = list(handoff.captured_lines)
         terminal.missing = list(handoff.missing)
+        terminal.parties_count = len(handoff.parties)
 
         ctx.transcript.log.append(
             f"create_case_record [TERMINAL] -> case created, "
@@ -377,7 +381,7 @@ async def run_handoff(
                 case_id=terminal.case_id,
                 actor="agent:slack",
                 payload={
-                    "parties": len(terminal.captured_lines),
+                    "parties": terminal.parties_count,
                     "process_type_known": bool(terminal.process_type),
                     "missing_count": len(terminal.missing),
                 },
