@@ -114,7 +114,154 @@ def test_no_send_tool_in_grant_set(db: sqlite3.Connection) -> None:
         "gmail_read_message",
         "create_email_draft",
         "get_case_history",
+        "create_case",
     }
+    assert len(tools) == 7
+
+
+# --------------------------------------------------------------------------- #
+# create_case — the mention agent's one write tool. Offline: no intake app runs
+# in these tests, so the portal-link poll always times out to the "pending"
+# branch. POLL_TIMEOUT_SECONDS is patched to 0.0 so the poll returns instantly.
+# --------------------------------------------------------------------------- #
+
+@pytest.fixture()
+def _fast_poll(monkeypatch):
+    from slack_agent import agent_tools
+
+    monkeypatch.setattr(agent_tools, "POLL_TIMEOUT_SECONDS", 0.0)
+    monkeypatch.setattr(agent_tools, "POLL_INTERVAL_SECONDS", 0.0)
+
+
+def _only_case(conn: sqlite3.Connection):
+    return conn.execute('SELECT id, name FROM "case"').fetchone()
+
+
+def test_create_case_couple_creates_case_stubs_and_case_number(
+    db: sqlite3.Connection, _fast_poll
+) -> None:
+    from core.case_history import get_history
+
+    captured: list = []
+    events.subscribe("case.handoff_received", captured.append)
+    tools, run = _tools(ToolDeps(conn=db))
+
+    out = _invoke(
+        tools["create_case"],
+        first_name="Yugandhar",
+        last_name="Gopu",
+        email="yugandhar.demo@example.com",
+        phone="+1-555-0100",
+        role="petitioner",
+        spouse_first_name="Priya",
+        spouse_last_name="Gopu",
+        spouse_email="priya.demo@example.com",
+        process_type="marriage_aos",
+    )
+
+    case = _only_case(db)
+    assert "firm case number" in out
+    assert case is not None
+    # Two parties, two history stubs, one shared firm case number.
+    assert db.execute("SELECT COUNT(*) c FROM party").fetchone()["c"] == 2
+    records = get_history(db, case["id"])
+    assert {r.role for r in records} == {"petitioner", "beneficiary"}
+    numbers = {r.case_number for r in records}
+    assert len(numbers) == 1 and next(iter(numbers)) in out
+    # The event the intake app consumes fired, tagged as a slack-mention origin.
+    assert len(captured) == 1
+    assert captured[0].payload == {"parties": 2, "origin": "slack-mention"}
+    # No send anywhere.
+    assert db.execute("SELECT COUNT(*) c FROM message_sent").fetchone()["c"] == 0
+    assert run.tool_calls == 1
+
+
+def test_create_case_single_person_one_party_only_stated_fields(
+    db: sqlite3.Connection, _fast_poll
+) -> None:
+    from core.case_history import get_history
+
+    tools, _ = _tools(ToolDeps(conn=db))
+    out = _invoke(
+        tools["create_case"],
+        first_name="Yugandhar",
+        last_name="Gopu",
+        email="yugandhar.demo@example.com",
+        # no phone, no spouse, no process type stated
+    )
+
+    case = _only_case(db)
+    assert db.execute("SELECT COUNT(*) c FROM party").fetchone()["c"] == 1
+    records = get_history(db, case["id"])
+    assert len(records) == 1 and records[0].role == "petitioner"
+    # Only stated fields captured: phone was not given, so it stays unset.
+    client = db.execute("SELECT first_name, phone FROM client").fetchone()
+    assert client["first_name"] == "Yugandhar"
+    assert client["phone"] is None
+    # Portal link could not be resolved offline → the honest pending wording.
+    assert "portal link pending — the intake app may be offline" in out
+
+
+def test_create_case_maps_thread_when_deps_carry_one(
+    db: sqlite3.Connection, _fast_poll
+) -> None:
+    from slack_agent import threads
+
+    tools, _ = _tools(ToolDeps(conn=db, channel="C1", thread_ts="9.0"))
+    _invoke(
+        tools["create_case"],
+        first_name="Yugandhar",
+        last_name="Gopu",
+        email="yugandhar.demo@example.com",
+    )
+    case = _only_case(db)
+    assert threads.get_case_by_thread(db, "C1", "9.0") == case["id"]
+
+
+def test_create_case_no_thread_deps_maps_nothing(
+    db: sqlite3.Connection, _fast_poll
+) -> None:
+    from slack_agent import threads
+
+    tools, _ = _tools(ToolDeps(conn=db))  # no channel/thread_ts
+    _invoke(
+        tools["create_case"],
+        first_name="Yugandhar",
+        last_name="Gopu",
+        email="yugandhar.demo@example.com",
+    )
+    case = _only_case(db)
+    assert threads.get_thread(db, case["id"]) is None
+
+
+def test_create_case_rejects_bad_role_and_creates_nothing(
+    db: sqlite3.Connection, _fast_poll
+) -> None:
+    tools, _ = _tools(ToolDeps(conn=db))
+    out = _invoke(
+        tools["create_case"],
+        first_name="Yugandhar",
+        last_name="Gopu",
+        email="yugandhar.demo@example.com",
+        role="cousin",
+    )
+    assert out.startswith("INVALID_ROLE")
+    assert db.execute('SELECT COUNT(*) c FROM "case"').fetchone()["c"] == 0
+
+
+def test_create_case_never_sends(db: sqlite3.Connection, _fast_poll) -> None:
+    """create_case is a WRITE tool but the write is case data, never an email:
+    no draft, no message_sent, and its own next-step text forbids claiming a send."""
+    tools, _ = _tools(ToolDeps(conn=db))
+    out = _invoke(
+        tools["create_case"],
+        first_name="Yugandhar",
+        last_name="Gopu",
+        email="yugandhar.demo@example.com",
+    )
+    assert db.execute("SELECT COUNT(*) c FROM draft").fetchone()["c"] == 0
+    assert db.execute("SELECT COUNT(*) c FROM message_sent").fetchone()["c"] == 0
+    assert "create_email_draft" in out and "approval to send" in out
 
 
 # --------------------------------------------------------------------------- #

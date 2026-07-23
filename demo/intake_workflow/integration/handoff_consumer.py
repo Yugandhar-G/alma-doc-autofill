@@ -7,8 +7,10 @@ open the local intake case, records the id mapping, and writes the freshly-minte
 client portal links back into OUR ``intake`` rows.
 
 Robustness:
-  - Requires BOTH a petitioner and a beneficiary client, each with a non-empty
-    email; otherwise it logs loudly and skips (records nothing — retryable).
+  - Requires AT LEAST ONE party (petitioner or beneficiary) with a non-empty
+    email. A missing side is opened with an explicit "To be added" placeholder
+    (email ""); only when neither side has a usable email does it log loudly and
+    skip (records nothing — retryable).
   - One bad event never kills the loop: it is logged and skipped, and the
     high-water mark still advances past it.
   - The high-water mark lives in ``iw_bridge_state['handoff_high_water']`` so a
@@ -25,6 +27,10 @@ _log = logging.getLogger("intake_workflow.integration.handoff_consumer")
 HANDOFF_EVENT_TYPE = "case.handoff_received"
 HIGH_WATER_KEY = "handoff_high_water"
 POLL_INTERVAL_SECONDS = 2.0
+# Explicit placeholder for a case side the attorney has not named yet — this is
+# a documented stand-in, NOT invented client data. Portal links are never
+# written for a placeholder side (it has no matching party row on our side).
+_PLACEHOLDER_NAME = "To be added"
 
 
 class HandoffConsumer:
@@ -130,20 +136,28 @@ class HandoffConsumer:
         parties = self._load_parties(conn, core_case_id)
         petitioner = parties.get("petitioner")
         beneficiary = parties.get("beneficiary")
-        if not (petitioner and beneficiary):
+        # Single-party cases are first-class: a Slack "@yunaki create a case for
+        # <one person>" opens with just that party. Require AT LEAST ONE party
+        # with a usable email; only when neither side has one is there nothing to
+        # act on (retryable skip).
+        if not (petitioner or beneficiary):
             _log.warning(
-                "handoff_consumer: core case %s missing a petitioner/beneficiary "
+                "handoff_consumer: core case %s has no petitioner/beneficiary "
                 "client with a usable email; skipping (retryable)", core_case_id
             )
             return
 
+        # The intake app's create_case takes both sides. For a side we don't have
+        # on file, pass an EXPLICIT placeholder — name "To be added", email "" —
+        # never invented data. Portal links are only written back for the party
+        # that actually exists on our side (see _write_portal_links).
         local_case = api.create_case(
             self._store,
             title=case_row["name"],
-            petitioner_name=petitioner["name"],
-            petitioner_email=petitioner["email"],
-            beneficiary_name=beneficiary["name"],
-            beneficiary_email=beneficiary["email"],
+            petitioner_name=petitioner["name"] if petitioner else _PLACEHOLDER_NAME,
+            petitioner_email=petitioner["email"] if petitioner else "",
+            beneficiary_name=beneficiary["name"] if beneficiary else _PLACEHOLDER_NAME,
+            beneficiary_email=beneficiary["email"] if beneficiary else "",
         )
         config.map_case(conn, local_case.id, core_case_id)
         self._write_portal_links(conn, core_case_id, local_case)

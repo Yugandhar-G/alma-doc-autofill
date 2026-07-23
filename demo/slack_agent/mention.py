@@ -54,7 +54,16 @@ conversation. If you didn't look it up, don't state it.
 5. Reply in concise Slack mrkdwn (*bold*, bullet lines). No preamble.
 
 When asked to email someone, look up the case first so the draft is grounded \
-in what's actually on file, then call create_email_draft."""
+in what's actually on file, then call create_email_draft.
+
+6. OPENING A NEW CASE. When asked to create/open a new case, call create_case \
+with EXACTLY the values the human stated — first/last name, email, phone, role, \
+and any spouse. If something essential is missing (e.g. no email), ask for it in \
+your reply; never invent it. After create_case returns, ALWAYS draft the intake \
+invitation via create_email_draft, putting the client's portal link (from the \
+create_case result) in the body, warm in tone, signed "Allison — Yew Legal". \
+Your reply must state the firm case number and that a draft to <name> at <email> \
+is waiting for approval — never claim anything was sent."""
 
 
 def strip_mention(text: str) -> str:
@@ -118,7 +127,12 @@ async def handle_mention(
 
     budget = budget or AgentBudget()
     run = AgentRun()
-    deps = ToolDeps(conn=conn, gmail_service_factory=gmail_service_factory)
+    deps = ToolDeps(
+        conn=conn,
+        gmail_service_factory=gmail_service_factory,
+        channel=channel,
+        thread_ts=reply_thread,
+    )
     tools = build_agent_tools(deps, run, budget)
 
     task_prompt = f"{_case_context(conn, case_id)}\n\nThe team member asked:\n{ask}"

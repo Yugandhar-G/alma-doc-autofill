@@ -44,7 +44,17 @@ logger = logging.getLogger("slack_agent.agent_tools")
 _TIMELINE_LIMIT = 20
 _MAX_HISTORY_CHARS = 4000
 _HISTORY_ROLES = ("petitioner", "beneficiary")
+_CASE_ROLES = ("petitioner", "beneficiary")
 _NOT_ON_FILE = "not on file"
+
+# Portal-link poll: the intake app's handoff_consumer (a separate process) writes
+# the client portal URLs (…/c/<token>) into our intake rows shortly after we emit
+# case.handoff_received. We poll for them, but never block the agent forever — a
+# timeout degrades to an honest "pending" observation. Module-level so tests can
+# monkeypatch them down to near-zero and never actually wait.
+POLL_INTERVAL_SECONDS = 0.5
+POLL_TIMEOUT_SECONDS = 10.0
+_PORTAL_PENDING = "portal link pending — the intake app may be offline"
 
 # Which case-history fields belong to each section, per role. An empty list for a
 # role means the section is not applicable to that role's schema (e.g. a
@@ -141,6 +151,11 @@ class ToolDeps:
 
     conn: sqlite3.Connection
     gmail_service_factory: Callable[[], Any] | None = None
+    # Slack conversation context. Only create_case consumes these: it maps the
+    # new case to THIS thread so the upcoming Approve card lands in the same
+    # conversation. None when the mention arrived outside a thread we can map.
+    channel: str | None = None
+    thread_ts: str | None = None
     _gmail: Any = None
 
     def gmail(self) -> Any:
@@ -198,6 +213,32 @@ class CaseHistoryArgs(BaseModel):
             "immigration, employment, parents, children, criminal, household, "
             "education, travel, memberships, status. Omit for an overview."
         ),
+    )
+
+
+class CreateCaseArgs(BaseModel):
+    first_name: str = Field(description="Client's first name, exactly as stated")
+    last_name: str = Field(description="Client's last name, exactly as stated")
+    email: str = Field(description="Client's email address, exactly as stated")
+    phone: str | None = Field(
+        default=None, description="Client's phone, only if the human stated it"
+    )
+    role: str = Field(
+        default="petitioner",
+        description="The client's role: 'petitioner' or 'beneficiary'.",
+    )
+    spouse_first_name: str | None = Field(
+        default=None, description="Spouse's first name, only if stated"
+    )
+    spouse_last_name: str | None = Field(
+        default=None, description="Spouse's last name, only if stated"
+    )
+    spouse_email: str | None = Field(
+        default=None, description="Spouse's email, only if stated"
+    )
+    process_type: str | None = Field(
+        default=None,
+        description="Visa/process type (e.g. 'marriage_aos'), only if stated",
     )
 
 
@@ -317,6 +358,156 @@ def _create_email_draft(deps: ToolDeps):
             "will NOT be sent unless a human clicks Approve. Never tell anyone "
             "the email was sent."
         )
+
+    return run
+
+
+# --------------------------------------------------------------------------- #
+# create_case — the ONE write tool the mention agent owns
+#
+# It builds the full case profile by REUSING casewrite.create_handoff_case (core
+# case + clients + parties + intakes + firm case number + per-role history stubs),
+# emits case.handoff_received so the running intake app mints the portal links,
+# maps the new case to THIS Slack thread so the approval card lands here, then
+# polls for the portal links. It NEVER emails anyone: the next step (drafting the
+# invitation) is create_email_draft, which is itself gated behind human approval.
+# --------------------------------------------------------------------------- #
+
+def _clean_arg(value: Any) -> str | None:
+    """Blank / whitespace / non-string → None. NULL OVER GUESS at the boundary:
+    a value the attorney didn't state stays unset; we never invent one."""
+    if not isinstance(value, str):
+        return None
+    return value.strip() or None
+
+
+def _spouse_present(first: Any, last: Any, email: Any) -> bool:
+    return any(_clean_arg(v) is not None for v in (first, last, email))
+
+
+async def _poll_portal_links(conn: sqlite3.Connection, case_id: str) -> dict[str, str]:
+    """Poll our intake rows for portal URLs (…/c/<token>) the intake app writes.
+
+    Returns {role: url} for every party whose portal link has landed. Stops as
+    soon as every party on file has a link, or when the timeout elapses (partial
+    or empty result then — the caller reports the missing ones as pending). The
+    deadline is checked AFTER each read so a zero timeout returns immediately
+    without ever sleeping (keeps unit tests instant)."""
+    loop = asyncio.get_event_loop()
+    deadline = loop.time() + POLL_TIMEOUT_SECONDS
+    while True:
+        rows = conn.execute(
+            "SELECT p.role AS role, i.url AS url FROM intake i "
+            "JOIN party p ON p.client_id = i.client_id AND p.case_id = i.case_id "
+            "WHERE i.case_id = ?",
+            (case_id,),
+        ).fetchall()
+        links = {
+            row["role"]: row["url"]
+            for row in rows
+            if row["url"] and "/c/" in row["url"]
+        }
+        expected = {row["role"] for row in rows}
+        if expected and set(links) >= expected:
+            return links
+        if loop.time() >= deadline:
+            return links
+        await asyncio.sleep(POLL_INTERVAL_SECONDS)
+
+
+def _create_case(deps: ToolDeps):
+    async def run(
+        first_name: str,
+        last_name: str,
+        email: str,
+        phone: str | None = None,
+        role: str = "petitioner",
+        spouse_first_name: str | None = None,
+        spouse_last_name: str | None = None,
+        spouse_email: str | None = None,
+        process_type: str | None = None,
+    ) -> str:
+        # Lazy imports break any import-time coupling and match the pattern the
+        # rest of this module uses (get_case_history lazy-imports its layer too).
+        from slack_agent import casewrite, threads
+        from slack_agent.handoff_agent import HandoffParse, HandoffParty
+
+        role_key = (role or "").strip().lower()
+        if role_key not in _CASE_ROLES:
+            return (
+                f"INVALID_ROLE: '{role}' is not a valid role. Use exactly "
+                "'petitioner' or 'beneficiary'."
+            )
+        other_role = "beneficiary" if role_key == "petitioner" else "petitioner"
+
+        # Main person: only the fields the attorney actually stated. Blanks → None.
+        parties = [
+            HandoffParty(
+                role=role_key,
+                first_name=_clean_arg(first_name),
+                last_name=_clean_arg(last_name),
+                email=_clean_arg(email),
+                phone=_clean_arg(phone),
+            )
+        ]
+        if _spouse_present(spouse_first_name, spouse_last_name, spouse_email):
+            parties.append(
+                HandoffParty(
+                    role=other_role,
+                    first_name=_clean_arg(spouse_first_name),
+                    last_name=_clean_arg(spouse_last_name),
+                    email=_clean_arg(spouse_email),
+                    phone=None,  # a spouse phone is never inferred
+                )
+            )
+
+        parse = HandoffParse(process_type=_clean_arg(process_type), parties=parties)
+        result = casewrite.create_handoff_case(deps.conn, parse)
+        case = result.case
+
+        events.emit(
+            deps.conn,
+            Event(
+                type="case.handoff_received",
+                case_id=case.id,
+                actor="agent:slack",
+                payload={"parties": len(parties), "origin": "slack-mention"},
+            ),
+        )
+
+        # Land the upcoming approval card in THIS conversation when we have one.
+        if deps.channel and deps.thread_ts:
+            threads.map_thread(deps.conn, case.id, deps.channel, deps.thread_ts)
+
+        links = await _poll_portal_links(deps.conn, case.id)
+
+        main_name = " ".join(
+            p for p in (_clean_arg(first_name), _clean_arg(last_name)) if p
+        ) or "the client"
+        main_email = _clean_arg(email) or "(no email on file)"
+
+        lines = [
+            f"Case created: {case.name} — firm case number {result.case_number}.",
+            "Portal links:",
+        ]
+        for party in parties:
+            url = links.get(party.role)
+            lines.append(
+                f"- {party.role}: {url}" if url else f"- {party.role}: {_PORTAL_PENDING}"
+            )
+        logger.info(
+            "mention agent created case=%s parties=%d links=%d",
+            case.id,
+            len(parties),
+            len(links),
+        )
+        lines.append(
+            f"Now draft the intake invitation with create_email_draft (include "
+            f"the client's portal link in the body) and tell the human you are "
+            f"drafting to {main_name} at {main_email} and need their approval to "
+            f"send. Do NOT claim anything was sent."
+        )
+        return "\n".join(lines)
 
     return run
 
@@ -578,6 +769,18 @@ def build_agent_tools(
             "never stated.",
             CaseHistoryArgs,
             _get_case_history(deps),
+        ),
+        (
+            "create_case",
+            "Create a NEW case profile (core case + client/party records + "
+            "intakes + firm case number + per-role history stubs) and its client "
+            "portal links. Use ONLY values the human explicitly stated; any value "
+            "they did not state stays unset (never invent a name, email, or "
+            "phone). This does NOT email anyone — after it returns, draft the "
+            "intake invitation with create_email_draft (the reply tells you how) "
+            "so a human can approve the send.",
+            CreateCaseArgs,
+            _create_case(deps),
         ),
     ]
     return [

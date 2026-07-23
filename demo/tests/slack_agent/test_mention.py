@@ -155,6 +155,89 @@ def test_mention_draft_mail_creates_pending_draft_never_sends(
     assert db.execute("SELECT COUNT(*) c FROM message_sent").fetchone()["c"] == 0
 
 
+def test_mention_create_case_then_drafts_invitation_never_sends(
+    db, slack, monkeypatch
+) -> None:
+    """The full user story, offline: '@yunaki create a new case for Yugandhar
+    Gopu …' → scripted create_case → scripted create_email_draft (portal link in
+    the body) → reply that a draft is awaiting approval. Proves the case + stubs
+    + firm case number exist, a pending draft was created, draft.created fired,
+    and NOTHING was sent."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    # No intake app in the test → make create_case's portal poll return instantly.
+    from slack_agent import agent_tools
+
+    monkeypatch.setattr(agent_tools, "POLL_TIMEOUT_SECONDS", 0.0)
+    monkeypatch.setattr(agent_tools, "POLL_INTERVAL_SECONDS", 0.0)
+
+    drafts: list = []
+    events.subscribe("draft.created", drafts.append)
+
+    reply_text = (
+        "Case opened. A draft to *Yugandhar Gopu* at yugandhar.demo@example.com "
+        "is waiting for your approval in this thread."
+    )
+    model = ScriptedChatModel(
+        responses=[
+            _tool_call_msg(
+                (
+                    "create_case",
+                    {
+                        "first_name": "Yugandhar",
+                        "last_name": "Gopu",
+                        "email": "yugandhar.demo@example.com",
+                        "phone": "+1-555-0100",
+                    },
+                )
+            ),
+            _tool_call_msg(
+                (
+                    "create_email_draft",
+                    {
+                        "case_query": "Yugandhar",
+                        "recipient_name": "Yugandhar Gopu",
+                        "recipient_email": "yugandhar.demo@example.com",
+                        "subject": "Welcome to Yew Legal — your intake link",
+                        "body": (
+                            "Hi Yugandhar, welcome aboard. Please start your "
+                            "intake here: <PORTAL_LINK>. — Allison, Yew Legal"
+                        ),
+                    },
+                )
+            ),
+            AIMessage(content=reply_text),
+        ]
+    )
+
+    reply = _run_mention(
+        db,
+        slack,
+        model,
+        text=(
+            f"<@{BOT}> create a new case for Yugandhar Gopu, phone +1-555-0100, "
+            "email yugandhar.demo@example.com"
+        ),
+    )
+
+    # The case exists with history stubs and a firm case number.
+    from core.case_history import get_history
+
+    case = db.execute('SELECT id, name FROM "case"').fetchone()
+    assert case is not None and case["name"] == "Yugandhar"
+    records = get_history(db, case["id"])
+    assert len(records) == 1 and records[0].case_number
+
+    # A pending draft was created and announced, but nothing was sent.
+    assert reply == reply_text
+    assert len(drafts) == 1
+    assert db.execute("SELECT state FROM draft").fetchone()["state"] == "pending"
+    assert db.execute("SELECT COUNT(*) c FROM message_sent").fetchone()["c"] == 0
+
+    # Reply landed in the mention's thread (message_ts, since no thread_ts).
+    post = slack.posts[-1]
+    assert post["thread_ts"] == "9.0" and post["text"] == reply
+
+
 def test_case_context_names_thread_case(db) -> None:
     case_id = seed(db)
     ctx = mention._case_context(db, case_id)

@@ -24,7 +24,6 @@ from core.models import Event
 from slack_agent import (
     approvals,
     escalations,
-    listener,
     mention,
     senders,
     status_command,
@@ -86,29 +85,21 @@ def _register(
     async def _on_mention(event, client):  # noqa: ANN001
         if not mention.should_handle_mention(event):
             return
-        ask = mention.strip_mention(event.get("text", ""))
         channel = event["channel"]
         root_ts = event.get("thread_ts") or event["ts"]
-        # Route: a tagged message carrying case-handoff signal (a client email
-        # or handoff language) goes to the handoff agent; everything else is a
-        # question/status/draft ask for the mention agent.
-        if listener.looks_like_handoff(ask):
-            await listener.handle_handoff_message(
-                conn=conn,
-                client=client,
-                channel=channel,
-                message_ts=event["ts"],
-                text=ask,
-            )
-        else:
-            await mention.handle_mention(
-                conn=conn,
-                client=client,
-                channel=channel,
-                message_ts=event["ts"],
-                thread_ts=event.get("thread_ts"),
-                text=event.get("text", ""),
-            )
+        # One conversational brain for every tagged ask: the mention agent's
+        # create_case tool now covers case handoffs too (parse + create +
+        # intake-invite draft), so the looks_like_handoff fork is retired —
+        # two brains that can both open cases was one brain too many. The
+        # handoff agent remains available for the untagged listener path.
+        await mention.handle_mention(
+            conn=conn,
+            client=client,
+            channel=channel,
+            message_ts=event["ts"],
+            thread_ts=event.get("thread_ts"),
+            text=event.get("text", ""),
+        )
         # Remember this thread so in-thread follow-ups continue without a re-tag.
         threads.mark_bot_thread(conn, channel, root_ts)
 
