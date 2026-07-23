@@ -53,7 +53,8 @@ def on_timeline(event) -> None:
         # PII-free payload: the item key (a stable identifier, never a value)
         # plus any conservative extra flags declared in _MIRRORED.
         payload = dict(extra)
-        item_key = event.data.get("item") if isinstance(event.data, dict) else None
+        data = event.data if isinstance(event.data, dict) else {}
+        item_key = data.get("item")
         if item_key is not None:
             payload["item"] = item_key
 
@@ -66,5 +67,19 @@ def on_timeline(event) -> None:
                 payload=payload,
             ),
         )
+
+        # Client activity also updates OUR intake row, so the stall snapshot
+        # (/yunaki status, followup logic) sees the truth. Role-scoped only —
+        # marking the other party active would be a guess (§4.3).
+        role = data.get("role")
+        if event.kind == "item_submitted" and role in ("petitioner", "beneficiary"):
+            conn.execute(
+                "UPDATE intake SET last_client_activity_at = ? "
+                "WHERE case_id = ? AND client_id IN "
+                "(SELECT client_id FROM party WHERE case_id = ? AND role = ?)",
+                (event.ts.isoformat() if hasattr(event.ts, "isoformat") else event.ts,
+                 core_case_id, core_case_id, role),
+            )
+            conn.commit()
     finally:
         conn.close()

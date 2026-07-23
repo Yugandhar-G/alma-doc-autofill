@@ -59,6 +59,39 @@ def _completeness(conn: sqlite3.Connection, intake_ids: list[str]) -> str:
     return f"{done}/{total} items in ({pct} of mandatory)"
 
 
+def _intake_workflow_checklist(conn: sqlite3.Connection, case_id: str) -> str | None:
+    """Checklist truth for cases living in the intake workflow (monorepo).
+
+    Their checklist state is the intake app's Case aggregate (iw_cases blob),
+    not /core's checklist_item rows. Counts only — never item values. Returns
+    None when the case isn't mapped or the intake tables don't exist yet.
+    """
+    import json
+
+    try:
+        row = conn.execute(
+            "SELECT c.data FROM iw_cases c JOIN iw_case_map m "
+            "ON m.yew_case_id = c.id WHERE m.core_case_id = ?",
+            (case_id,),
+        ).fetchone()
+    except sqlite3.OperationalError:
+        return None  # intake app never touched this DB
+    if row is None:
+        return None
+    items = json.loads(row["data"]).get("items", [])
+    required = [i for i in items if i.get("required")]
+    accepted = sum(1 for i in required if i.get("state") == "accepted")
+    in_review = sum(
+        1 for i in items
+        if i.get("state") in ("submitted", "flagged", "checked")
+    )
+    pct = f"{round(accepted / len(required) * 100)}%" if required else "not on file"
+    return (
+        f"{accepted}/{len(required)} required items accepted ({pct}), "
+        f"{in_review} awaiting review (intake portal)"
+    )
+
+
 def handle_status(conn: sqlite3.Connection, query: str) -> str:
     """Build the plaintext status reply for a fuzzy case query."""
     matches = _match_cases(conn, query)
@@ -74,17 +107,20 @@ def handle_status(conn: sqlite3.Connection, query: str) -> str:
     ).fetchall()
     intake_ids = [row["id"] for row in intakes]
 
+    checklist = _intake_workflow_checklist(conn, case["id"]) or _completeness(
+        conn, intake_ids
+    )
     lines = [
         f"*{case['name']}*",
         f"Stage: {case['stage']}",
         f"Process type: {case['process_type'] or 'not on file'}",
-        f"Checklist: {_completeness(conn, intake_ids)}",
+        f"Checklist: {checklist}",
     ]
     if intakes:
         for row in intakes:
-            lines.append(
-                f"Intake {row['id']}: last client activity {_days_since(row['last_client_activity_at'])} ago"
-            )
+            since = _days_since(row["last_client_activity_at"])
+            since = f"{since} ago" if since != "not on file" else since
+            lines.append(f"Intake {row['id']}: last client activity {since}")
     else:
         lines.append("Intakes: not on file")
     # No deadline field exists in the model — never estimate a USCIS timeline.

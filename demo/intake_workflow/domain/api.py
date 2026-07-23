@@ -180,7 +180,7 @@ def submit_answers(
     _timeline(
         store, case, now, "item_submitted",
         f"{party_role.value} submitted “{item.label}” — {item.state.value}",
-        {"item": item.key, "state": item.state.value,
+        {"item": item.key, "state": item.state.value, "role": party_role.value,
          "findings": [f.code for f in result.findings]},
     )
 
@@ -229,6 +229,7 @@ def submit_document(
         store, case, now, "item_submitted",
         f"{party_role.value} uploaded “{item.label}” ({filename}) — {item.state.value}",
         {"item": item.key, "state": item.state.value, "filename": filename,
+         "role": party_role.value,
          "findings": [f.code for f in result.findings]},
     )
     store.save_case(case)

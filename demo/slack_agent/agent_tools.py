@@ -585,7 +585,27 @@ def build_agent_tools(
             name=name,
             description=description,
             args_schema=args_schema,
-            coroutine=budgeted(run, budget, name, fn),
+            coroutine=budgeted(run, budget, name, _honest(name, fn)),
         )
         for name, description, args_schema, fn in specs
     ]
+
+
+def _honest(name: str, fn):
+    """Errors are honest strings, never exceptions into the loop — including
+    UNEXPECTED ones (e.g. a schema change under a long-lived connection). A
+    raw exception becomes a langchain tool error the model can't reason
+    about; a TOOL_FAILED string it can report and retry."""
+
+    async def _run(**kwargs: Any) -> str:
+        try:
+            return await fn(**kwargs)
+        except Exception as exc:  # noqa: BLE001 - loud in logs, honest to model
+            logger.exception("tool %s failed", name)
+            return (
+                f"TOOL_FAILED: {name} hit {type(exc).__name__}. "
+                "Try once more; if it persists, tell the user the lookup "
+                "failed rather than guessing."
+            )
+
+    return _run
