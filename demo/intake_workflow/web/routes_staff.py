@@ -129,6 +129,14 @@ def create_case(
         consult_notes=consult_notes,
         i485_approved_on=_parse_optional_date(i485_approved_on),
     )
+    try:  # staff-created cases join the shared /core plane; never break the UI
+        from intake_workflow.integration import case_link
+        case_link.link_staff_case(case)
+    except Exception:
+        import logging
+        logging.getLogger("intake_workflow.integration").exception(
+            "link_staff_case failed"
+        )
     return RedirectResponse(f"/staff/case/{case.id}", status_code=303)
 
 
