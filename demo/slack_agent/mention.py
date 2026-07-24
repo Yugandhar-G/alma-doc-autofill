@@ -261,12 +261,20 @@ THINKING_FRAME_SECONDS = 1.4
 
 
 async def _post_thinking(client: Any, channel: str, thread_ts: str) -> str | None:
-    """Post the placeholder; returns its ts (None if even that failed)."""
+    """Post the placeholder; returns its ts (None if even that failed).
+
+    Duck-typed ts extraction on purpose: Bolt's AsyncWebClient returns a
+    SlackResponse (dict-LIKE, not a dict) — an isinstance(resp, dict) check
+    here silently disabled the whole feature in production while dict-returning
+    test fakes kept the suite green."""
     try:
         resp = await client.chat_postMessage(
             channel=channel, thread_ts=thread_ts, text=THINKING_FRAMES[0]
         )
-        return resp.get("ts") if isinstance(resp, dict) else None
+        ts = resp.get("ts") if resp is not None else None
+        if not ts:
+            logger.warning("thinking placeholder posted but no ts in response")
+        return ts
     except Exception:  # noqa: BLE001 - degrade to the no-placeholder path
         logger.warning("thinking placeholder failed", exc_info=True)
         return None

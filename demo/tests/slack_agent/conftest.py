@@ -41,6 +41,23 @@ def db(tmp_path) -> Iterator[sqlite3.Connection]:
         conn.close()
 
 
+class FakeSlackResponse:
+    """Dict-LIKE, deliberately NOT a dict — mirrors slack_sdk's SlackResponse.
+
+    Production code that does isinstance(resp, dict) instead of duck-typing
+    silently broke against the real client while dict-returning fakes kept the
+    suite green (the frozen 'Thinking…' bug). Never return plain dicts here."""
+
+    def __init__(self, data: dict[str, Any]) -> None:
+        self.data = data
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return self.data.get(key, default)
+
+    def __getitem__(self, key: str) -> Any:
+        return self.data[key]
+
+
 class FakeSlackClient:
     """Records Slack Web API calls instead of hitting the network."""
 
@@ -53,22 +70,24 @@ class FakeSlackClient:
         self.replies_calls: list[dict[str, Any]] = []
         self._ts = 0
 
-    async def chat_postMessage(self, **kwargs: Any) -> dict[str, Any]:
+    async def chat_postMessage(self, **kwargs: Any) -> FakeSlackResponse:
         self.posts.append(kwargs)
         self._ts += 1
-        return {"ok": True, "ts": f"{self._ts}.000", "channel": kwargs.get("channel")}
+        return FakeSlackResponse(
+            {"ok": True, "ts": f"{self._ts}.000", "channel": kwargs.get("channel")}
+        )
 
-    async def chat_update(self, **kwargs: Any) -> dict[str, Any]:
+    async def chat_update(self, **kwargs: Any) -> FakeSlackResponse:
         self.updates.append(kwargs)
-        return {"ok": True}
+        return FakeSlackResponse({"ok": True})
 
-    async def views_open(self, **kwargs: Any) -> dict[str, Any]:
+    async def views_open(self, **kwargs: Any) -> FakeSlackResponse:
         self.views.append(kwargs)
-        return {"ok": True}
+        return FakeSlackResponse({"ok": True})
 
-    async def conversations_replies(self, **kwargs: Any) -> dict[str, Any]:
+    async def conversations_replies(self, **kwargs: Any) -> FakeSlackResponse:
         self.replies_calls.append(kwargs)
-        return {"messages": self.thread_replies}
+        return FakeSlackResponse({"messages": self.thread_replies})
 
 
 @pytest.fixture()
