@@ -63,6 +63,29 @@ def test_intake_complete_blocks_use_supplied_handle():
     assert "@ops-desk" in json.dumps(built, ensure_ascii=False)
 
 
+def test_validation_verdict_reports_auto_accept_and_attorney():
+    built = blocks.validation_verdict_blocks(
+        "Ravi Kumar / Mei Lin", "Isaiah",
+        {"complete": True, "missing": [], "auto_accepted": 7, "attorney_review": 2},
+    )
+    blob = json.dumps(built, ensure_ascii=False)
+    assert "Ready to file" in blob
+    assert "auto-accepted 7 clean items" in blob
+    assert "2 items still need attorney review" in blob
+    assert "Ravi Kumar / Mei Lin" in blob
+    assert "Isaiah" in blob
+
+
+def test_validation_verdict_singular_and_no_attorney():
+    built = blocks.validation_verdict_blocks(
+        "A / B", "Isaiah",
+        {"complete": True, "missing": [], "auto_accepted": 1, "attorney_review": 0},
+    )
+    blob = json.dumps(built, ensure_ascii=False)
+    assert "auto-accepted 1 clean item" in blob and "1 clean items" not in blob
+    assert "attorney review" not in blob
+
+
 # --------------------------------------------------------------------------- #
 # Feature 2 — approve a WhatsApp draft: no-op placeholder path, sent(mocked)
 # --------------------------------------------------------------------------- #

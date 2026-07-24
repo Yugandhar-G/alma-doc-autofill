@@ -129,11 +129,13 @@ def test_mention_answers_case_question_in_thread(db, slack, monkeypatch) -> None
     )
 
     assert reply == "*Ravi Kumar / Mei Lin* is in stage intake."
-    # Linear-style loading: a threaded "Thinking" placeholder posts first,
-    # then chat_update edits it into the final reply.
+    # Fallback loading: placeholder posts, gets DELETED (never edited), then
+    # the reply arrives as a clean fresh post — nothing ever says (edited).
+    assert "Thinking" in slack.posts[-2]["text"]
+    assert slack.deletes and slack.deletes[-1]["ts"] == "1.000"
     post = slack.posts[-1]
-    assert post["thread_ts"] == "5.0" and "Thinking" in post["text"]
-    assert slack.updates[-1]["text"] == reply
+    assert post["thread_ts"] == "5.0" and post["text"] == reply
+    assert not slack.updates
 
 
 def test_mention_draft_mail_creates_pending_draft_never_sends(
@@ -252,10 +254,11 @@ def test_mention_create_case_then_drafts_invitation_never_sends(
     assert db.execute("SELECT state FROM draft").fetchone()["state"] == "pending"
     assert db.execute("SELECT COUNT(*) c FROM message_sent").fetchone()["c"] == 0
 
-    # Placeholder landed in the mention's thread; the reply arrives by edit.
+    # Placeholder posted then deleted; the reply is a clean fresh post.
+    assert "Thinking" in slack.posts[-2]["text"]
+    assert slack.deletes
     post = slack.posts[-1]
-    assert post["thread_ts"] == "9.0" and "Thinking" in post["text"]
-    assert slack.updates[-1]["text"] == reply
+    assert post["thread_ts"] == "9.0" and post["text"] == reply
 
 
 def test_case_context_names_thread_case(db) -> None:
@@ -397,8 +400,25 @@ def test_mention_followup_resolves_this_case_via_history(db, slack, monkeypatch)
     assert "Conversation so far in this thread (oldest first):" in prompt
     assert "Kumar" in prompt
     assert "this case" in prompt  # the live ask, threaded in
-    # The fix worked end to end: grounded reply, delivered by placeholder edit.
+    # The fix worked end to end: grounded reply as a clean fresh post.
     assert reply == "*Ravi Kumar / Mei Lin* — intake, checklist pending."
     post = slack.posts[-1]
-    assert post["thread_ts"] == "5.0" and "Thinking" in post["text"]
-    assert slack.updates[-1]["text"] == reply
+    assert post["thread_ts"] == "5.0" and post["text"] == reply
+    assert slack.deletes  # placeholder cleaned up, never edited
+
+
+def test_native_thinking_status_when_enabled(db, slack, monkeypatch) -> None:
+    """With the Agents & AI Apps toggle on, Slack renders the shimmer itself:
+    set status -> work -> clear status; no placeholder message at all."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    seed(db)
+    slack.native_status_enabled = True
+
+    model = ScriptedChatModel(responses=[AIMessage(content="All quiet on this case.")])
+    reply = _run_mention(db, slack, model, text=f"<@{BOT}> anything new?")
+
+    assert reply == "All quiet on this case."
+    assert [c["status"] for c in slack.status_calls] == ["is thinking...", ""]
+    texts = [p["text"] for p in slack.posts]
+    assert all("Thinking" not in t for t in texts)  # no placeholder in native mode
+    assert not slack.deletes

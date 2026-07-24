@@ -17,7 +17,6 @@ the network.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import re
 import sqlite3
@@ -223,12 +222,7 @@ async def handle_mention(
     else:
         task_prompt = f"{context_line}\n\nThe team member now asks:\n{ask}"
 
-    placeholder_ts = await _post_thinking(client, channel, reply_thread)
-    animator = (
-        asyncio.create_task(_animate_thinking(client, channel, placeholder_ts))
-        if placeholder_ts
-        else None
-    )
+    thinking = await _start_thinking(client, channel, reply_thread)
     try:
         reply = await run_mention_agent(
             model=model_factory(),
@@ -239,10 +233,9 @@ async def handle_mention(
             budget=budget,
         )
     finally:
-        if animator:
-            animator.cancel()
+        await _stop_thinking(client, channel, reply_thread, thinking)
 
-    await _deliver_reply(client, channel, reply_thread, placeholder_ts, reply)
+    await client.chat_postMessage(channel=channel, thread_ts=reply_thread, text=reply)
     logger.info(
         "mention handled: case_scoped=%s tool_calls=%d", bool(case_id), run.tool_calls
     )
@@ -250,61 +243,49 @@ async def handle_mention(
 
 
 # ------------------------------------------------------------------ thinking #
-# Linear-style loading state: post a placeholder the moment the mention
-# arrives, animate its ellipsis while the agent works, then EDIT it into the
-# final reply (chat.update) so the thread never shows a gap of silence.
-# Every piece is best-effort — a Slack hiccup in the animation must never
-# cost the actual reply.
+# Native Slack "is thinking..." (assistant.threads.setStatus): Slack renders
+# the shimmering Thinking… row + the "<app> is thinking..." composer status
+# itself — no message, no edits, no "(edited)" tag — and clears it when the
+# reply posts. Requires the app's Agents & AI Apps toggle + assistant:write;
+# until that's flipped (or on surfaces that reject it) we fall back to a
+# static placeholder that is DELETED before the reply posts fresh. Nothing is
+# ever edited, so nothing ever says (edited). All of it is best-effort —
+# cosmetics must never cost the reply.
 
-THINKING_FRAMES = ("_Thinking…_", "_Thinking·…_", "_Thinking··…_", "_Thinking···…_")
-THINKING_FRAME_SECONDS = 1.4
+THINKING_STATUS = "is thinking..."
+THINKING_FALLBACK_TEXT = "_Thinking…_"
 
 
-async def _post_thinking(client: Any, channel: str, thread_ts: str) -> str | None:
-    """Post the placeholder; returns its ts (None if even that failed).
-
-    Duck-typed ts extraction on purpose: Bolt's AsyncWebClient returns a
-    SlackResponse (dict-LIKE, not a dict) — an isinstance(resp, dict) check
-    here silently disabled the whole feature in production while dict-returning
-    test fakes kept the suite green."""
+async def _start_thinking(client: Any, channel: str, thread_ts: str) -> dict[str, Any]:
+    """Returns {'mode': 'status'|'placeholder'|'none', 'ts': str|None}."""
+    try:
+        await client.assistant_threads_setStatus(
+            channel_id=channel, thread_ts=thread_ts, status=THINKING_STATUS
+        )
+        return {"mode": "status", "ts": None}
+    except Exception:  # noqa: BLE001 - feature off / unsupported surface
+        logger.info("native thinking status unavailable; using placeholder")
     try:
         resp = await client.chat_postMessage(
-            channel=channel, thread_ts=thread_ts, text=THINKING_FRAMES[0]
+            channel=channel, thread_ts=thread_ts, text=THINKING_FALLBACK_TEXT
         )
         ts = resp.get("ts") if resp is not None else None
-        if not ts:
-            logger.warning("thinking placeholder posted but no ts in response")
-        return ts
-    except Exception:  # noqa: BLE001 - degrade to the no-placeholder path
+        return {"mode": "placeholder" if ts else "none", "ts": ts}
+    except Exception:  # noqa: BLE001 - no loading state at all, reply still lands
         logger.warning("thinking placeholder failed", exc_info=True)
-        return None
+        return {"mode": "none", "ts": None}
 
 
-async def _animate_thinking(client: Any, channel: str, ts: str) -> None:
-    """Cycle the ellipsis until cancelled. Errors end the animation quietly."""
-    frame = 0
-    try:
-        while True:
-            await asyncio.sleep(THINKING_FRAME_SECONDS)
-            frame += 1
-            await client.chat_update(
-                channel=channel, ts=ts,
-                text=THINKING_FRAMES[frame % len(THINKING_FRAMES)],
-            )
-    except asyncio.CancelledError:
-        raise
-    except Exception:  # noqa: BLE001 - animation is cosmetic, never fatal
-        logger.debug("thinking animation stopped early", exc_info=True)
-
-
-async def _deliver_reply(
-    client: Any, channel: str, thread_ts: str, placeholder_ts: str | None, reply: str
+async def _stop_thinking(
+    client: Any, channel: str, thread_ts: str, thinking: dict[str, Any]
 ) -> None:
-    """Edit the placeholder into the reply; fall back to a fresh post."""
-    if placeholder_ts:
-        try:
-            await client.chat_update(channel=channel, ts=placeholder_ts, text=reply)
-            return
-        except Exception:  # noqa: BLE001 - the reply must land either way
-            logger.warning("placeholder update failed; posting fresh", exc_info=True)
-    await client.chat_postMessage(channel=channel, thread_ts=thread_ts, text=reply)
+    """Clear the native status or delete the placeholder. Never raises."""
+    try:
+        if thinking["mode"] == "status":
+            await client.assistant_threads_setStatus(
+                channel_id=channel, thread_ts=thread_ts, status=""
+            )
+        elif thinking["mode"] == "placeholder" and thinking["ts"]:
+            await client.chat_delete(channel=channel, ts=thinking["ts"])
+    except Exception:  # noqa: BLE001 - cosmetic cleanup, never fatal
+        logger.debug("thinking cleanup failed", exc_info=True)

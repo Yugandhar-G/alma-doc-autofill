@@ -64,10 +64,16 @@ class FakeSlackClient:
     def __init__(self) -> None:
         self.posts: list[dict[str, Any]] = []
         self.updates: list[dict[str, Any]] = []
+        self.deletes: list[dict[str, Any]] = []
         self.views: list[dict[str, Any]] = []
         # Thread-history seam: settable replies + a record of every fetch call.
         self.thread_replies: list[dict[str, Any]] = []
         self.replies_calls: list[dict[str, Any]] = []
+        # Native assistant status seam: off by default (raises, like a workspace
+        # whose Agents & AI Apps toggle is unset) so tests exercise the fallback;
+        # flip native_status_enabled=True to test the native path.
+        self.native_status_enabled = False
+        self.status_calls: list[dict[str, Any]] = []
         self._ts = 0
 
     async def chat_postMessage(self, **kwargs: Any) -> FakeSlackResponse:
@@ -79,6 +85,16 @@ class FakeSlackClient:
 
     async def chat_update(self, **kwargs: Any) -> FakeSlackResponse:
         self.updates.append(kwargs)
+        return FakeSlackResponse({"ok": True})
+
+    async def chat_delete(self, **kwargs: Any) -> FakeSlackResponse:
+        self.deletes.append(kwargs)
+        return FakeSlackResponse({"ok": True})
+
+    async def assistant_threads_setStatus(self, **kwargs: Any) -> FakeSlackResponse:
+        if not self.native_status_enabled:
+            raise RuntimeError("missing_scope: assistant:write")
+        self.status_calls.append(kwargs)
         return FakeSlackResponse({"ok": True})
 
     async def views_open(self, **kwargs: Any) -> FakeSlackResponse:

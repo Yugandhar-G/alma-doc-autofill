@@ -110,7 +110,7 @@ def test_intake_validated_complete_posts_into_mapped_thread(db, slack, run):
     assert post["channel"] == "C1"
     assert post["thread_ts"] == "42.0"
     blob = json.dumps(post["blocks"])
-    assert "Intake complete" in blob
+    assert "Ready to file" in blob  # verdict card replaces the passive ping
     assert CASE_NAME in blob  # case name rendered
     assert "Isaiah" in blob  # default caseworker mention
 
