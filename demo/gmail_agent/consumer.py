@@ -25,6 +25,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import sqlite3
 import sys
 import threading
@@ -264,10 +265,35 @@ def maybe_renew_watch(
     watch.persist_watch(conn, result)
 
 
+def _acquire_single_instance_lock():
+    """One consumer per machine, enforced. Two subscribers on the same Pub/Sub
+    subscription split deliveries between them — a stale process silently eats
+    half the notifications (observed live, Jul 23). flock auto-releases on
+    process death, so a crash never wedges the next start."""
+    import fcntl
+
+    os.makedirs("uploads", exist_ok=True)
+    handle = open("uploads/gmail_agent.lock", "w")
+    try:
+        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        print(
+            "[gmail_agent] STARTUP REFUSED: another gmail_agent consumer is "
+            "already running on this machine (uploads/gmail_agent.lock held). "
+            "Stop it first — two subscribers split Pub/Sub deliveries.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    handle.write(str(os.getpid()))
+    handle.flush()
+    return handle
+
+
 def run(cfg: config.GmailConfig) -> None:
     """Open the streaming pull and block. Ctrl-C stops it cleanly."""
     from google.cloud import pubsub_v1
 
+    _lock = _acquire_single_instance_lock()  # noqa: F841 - held for lifetime
     conn = _open_db()
     service = auth.build_service()
     with _db_lock:

@@ -34,7 +34,12 @@ logger = logging.getLogger("agents.harness")
 
 # Code-owned budget (directive constants).
 MAX_TOOL_CALLS = 12
-MAX_TURNS = 8
+# 12, not 8: the email brain's legitimate flow is ~5 investigative reads +
+# a terminal decision + the closing turn. At 8, a healthy run got guillotined
+# BEFORE its terminal tool and degraded to no_action (observed live, Jul 23) —
+# indecision-by-budget is worse than a slightly longer leash. MAX_TOOL_CALLS
+# stays the spend cap; turns are just headroom to finish deciding.
+MAX_TURNS = 12
 
 # Test seams — overwritten by tests; resolved lazily from the kernel otherwise.
 run_tool_loop: Any = None
