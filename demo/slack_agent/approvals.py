@@ -26,21 +26,38 @@ logger = logging.getLogger("slack_agent.approvals")
 AckFn = Callable[[], Awaitable[None]]
 
 
+def _email_originated(draft: DraftAction) -> bool:
+    """True when this draft exists because a CLIENT EMAILED US (the email
+    agent stamps the Gmail thread id into grounding for reply threading).
+    Those are new firm-side conversations — they must open a fresh channel
+    message, not resurrect whatever old Slack thread the case was born in."""
+    return draft.kind == "status_reply" or bool(
+        draft.grounding.case_state.get("gmail_thread_id")
+    )
+
+
 async def post_approval(
     conn: sqlite3.Connection, client: Any, draft: DraftAction, *, fallback_channel: str
 ) -> dict[str, str]:
-    """Post the approval block into the case thread (or the cases channel)."""
+    """Post the approval block.
+
+    Slack-born drafts thread into the case's live conversation (broadcast so
+    they also surface in the channel). Email-born drafts start a NEW top-level
+    message in the case's channel — the triggering conversation happened over
+    email, not in any existing Slack thread."""
     mapping = threads.get_thread(conn, draft.case_id)
     if mapping:
         channel, thread_ts = mapping["channel"], mapping["thread_ts"]
     else:
         channel, thread_ts = fallback_channel, None
+    if _email_originated(draft):
+        thread_ts = None  # fresh conversation; keep the case's channel
     await client.chat_postMessage(
         channel=channel,
         thread_ts=thread_ts,
-        # Approval cards live in the case thread for context, but must never
-        # hide there: reply_broadcast surfaces them in the channel too —
-        # an unseen approval card is an unanswered client.
+        # Threaded cards must never hide in a collapsed thread: broadcast
+        # surfaces them in the channel too — an unseen approval card is an
+        # unanswered client.
         reply_broadcast=True if thread_ts else None,
         blocks=blocks.approval_blocks(draft),
         text="Draft ready for review",
