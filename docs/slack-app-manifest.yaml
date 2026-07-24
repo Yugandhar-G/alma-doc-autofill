@@ -13,8 +13,13 @@ display_information:
 features:
   # Agents & AI Apps: lets the bot use assistant.threads.setStatus — Slack
   # renders the native shimmering "Thinking…" row while the agent works
-  # (no message edits, no "(edited)" tag).
-  assistant_view: true
+  # (no message edits, no "(edited)" tag). assistant_view is an object in
+  # the manifest schema; the messages tab must be enabled for the surface.
+  app_home:
+    messages_tab_enabled: true
+    messages_tab_read_only_enabled: false
+  assistant_view:
+    assistant_description: Yunaki — the firm's case assistant. Ask about cases, draft client emails, open new cases.
   bot_user:
     display_name: yunaki
     always_online: true
