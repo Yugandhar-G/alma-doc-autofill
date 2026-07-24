@@ -246,10 +246,37 @@ def _register_gmail_sender() -> None:
     logger.info("gmail sender registered for client_email + status_reply")
 
 
+def _acquire_single_instance_lock():
+    """One Slack agent per machine, enforced. Two processes on the same Slack
+    app split Socket Mode events between them — half the mentions get handled
+    by whichever (possibly stale) process wins the race, which is undebuggable
+    from the outside. flock releases automatically on process death, so a
+    crashed agent never wedges the next start."""
+    import fcntl
+    import os
+
+    os.makedirs("uploads", exist_ok=True)
+    handle = open("uploads/slack_agent.lock", "w")
+    try:
+        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        print(
+            "[slack_agent] STARTUP REFUSED: another slack_agent is already "
+            "running on this machine (uploads/slack_agent.lock is held). "
+            "Stop it first — two agents split Socket Mode events.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    handle.write(str(os.getpid()))
+    handle.flush()
+    return handle  # caller keeps it referenced for the process lifetime
+
+
 async def _run(settings: Settings) -> None:
     from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
     from slack_bolt.app.async_app import AsyncApp
 
+    _lock = _acquire_single_instance_lock()  # noqa: F841 - held for lifetime
     conn = _open_db()
     app = AsyncApp(token=settings.bot_token)
     try:
