@@ -38,6 +38,10 @@ async def post_approval(
     await client.chat_postMessage(
         channel=channel,
         thread_ts=thread_ts,
+        # Approval cards live in the case thread for context, but must never
+        # hide there: reply_broadcast surfaces them in the channel too —
+        # an unseen approval card is an unanswered client.
+        reply_broadcast=True if thread_ts else None,
         blocks=blocks.approval_blocks(draft),
         text="Draft ready for review",
     )
