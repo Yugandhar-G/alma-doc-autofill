@@ -17,6 +17,7 @@ the network.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 import sqlite3
@@ -221,19 +222,81 @@ async def handle_mention(
         )
     else:
         task_prompt = f"{context_line}\n\nThe team member now asks:\n{ask}"
-    reply = await run_mention_agent(
-        model=model_factory(),
-        system_prompt=SYSTEM_PROMPT,
-        task_prompt=task_prompt,
-        tools=tools,
-        run=run,
-        budget=budget,
-    )
 
-    await client.chat_postMessage(
-        channel=channel, thread_ts=reply_thread, text=reply
+    placeholder_ts = await _post_thinking(client, channel, reply_thread)
+    animator = (
+        asyncio.create_task(_animate_thinking(client, channel, placeholder_ts))
+        if placeholder_ts
+        else None
     )
+    try:
+        reply = await run_mention_agent(
+            model=model_factory(),
+            system_prompt=SYSTEM_PROMPT,
+            task_prompt=task_prompt,
+            tools=tools,
+            run=run,
+            budget=budget,
+        )
+    finally:
+        if animator:
+            animator.cancel()
+
+    await _deliver_reply(client, channel, reply_thread, placeholder_ts, reply)
     logger.info(
         "mention handled: case_scoped=%s tool_calls=%d", bool(case_id), run.tool_calls
     )
     return reply
+
+
+# ------------------------------------------------------------------ thinking #
+# Linear-style loading state: post a placeholder the moment the mention
+# arrives, animate its ellipsis while the agent works, then EDIT it into the
+# final reply (chat.update) so the thread never shows a gap of silence.
+# Every piece is best-effort — a Slack hiccup in the animation must never
+# cost the actual reply.
+
+THINKING_FRAMES = ("_Thinking…_", "_Thinking·…_", "_Thinking··…_", "_Thinking···…_")
+THINKING_FRAME_SECONDS = 1.4
+
+
+async def _post_thinking(client: Any, channel: str, thread_ts: str) -> str | None:
+    """Post the placeholder; returns its ts (None if even that failed)."""
+    try:
+        resp = await client.chat_postMessage(
+            channel=channel, thread_ts=thread_ts, text=THINKING_FRAMES[0]
+        )
+        return resp.get("ts") if isinstance(resp, dict) else None
+    except Exception:  # noqa: BLE001 - degrade to the no-placeholder path
+        logger.warning("thinking placeholder failed", exc_info=True)
+        return None
+
+
+async def _animate_thinking(client: Any, channel: str, ts: str) -> None:
+    """Cycle the ellipsis until cancelled. Errors end the animation quietly."""
+    frame = 0
+    try:
+        while True:
+            await asyncio.sleep(THINKING_FRAME_SECONDS)
+            frame += 1
+            await client.chat_update(
+                channel=channel, ts=ts,
+                text=THINKING_FRAMES[frame % len(THINKING_FRAMES)],
+            )
+    except asyncio.CancelledError:
+        raise
+    except Exception:  # noqa: BLE001 - animation is cosmetic, never fatal
+        logger.debug("thinking animation stopped early", exc_info=True)
+
+
+async def _deliver_reply(
+    client: Any, channel: str, thread_ts: str, placeholder_ts: str | None, reply: str
+) -> None:
+    """Edit the placeholder into the reply; fall back to a fresh post."""
+    if placeholder_ts:
+        try:
+            await client.chat_update(channel=channel, ts=placeholder_ts, text=reply)
+            return
+        except Exception:  # noqa: BLE001 - the reply must land either way
+            logger.warning("placeholder update failed; posting fresh", exc_info=True)
+    await client.chat_postMessage(channel=channel, thread_ts=thread_ts, text=reply)

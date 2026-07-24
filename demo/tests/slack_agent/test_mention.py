@@ -129,8 +129,11 @@ def test_mention_answers_case_question_in_thread(db, slack, monkeypatch) -> None
     )
 
     assert reply == "*Ravi Kumar / Mei Lin* is in stage intake."
+    # Linear-style loading: a threaded "Thinking" placeholder posts first,
+    # then chat_update edits it into the final reply.
     post = slack.posts[-1]
-    assert post["thread_ts"] == "5.0" and post["text"] == reply
+    assert post["thread_ts"] == "5.0" and "Thinking" in post["text"]
+    assert slack.updates[-1]["text"] == reply
 
 
 def test_mention_draft_mail_creates_pending_draft_never_sends(
@@ -249,9 +252,10 @@ def test_mention_create_case_then_drafts_invitation_never_sends(
     assert db.execute("SELECT state FROM draft").fetchone()["state"] == "pending"
     assert db.execute("SELECT COUNT(*) c FROM message_sent").fetchone()["c"] == 0
 
-    # Reply landed in the mention's thread (message_ts, since no thread_ts).
+    # Placeholder landed in the mention's thread; the reply arrives by edit.
     post = slack.posts[-1]
-    assert post["thread_ts"] == "9.0" and post["text"] == reply
+    assert post["thread_ts"] == "9.0" and "Thinking" in post["text"]
+    assert slack.updates[-1]["text"] == reply
 
 
 def test_case_context_names_thread_case(db) -> None:
@@ -393,7 +397,8 @@ def test_mention_followup_resolves_this_case_via_history(db, slack, monkeypatch)
     assert "Conversation so far in this thread (oldest first):" in prompt
     assert "Kumar" in prompt
     assert "this case" in prompt  # the live ask, threaded in
-    # The fix worked end to end: grounded reply, posted in-thread.
+    # The fix worked end to end: grounded reply, delivered by placeholder edit.
     assert reply == "*Ravi Kumar / Mei Lin* — intake, checklist pending."
     post = slack.posts[-1]
-    assert post["thread_ts"] == "5.0" and post["text"] == reply
+    assert post["thread_ts"] == "5.0" and "Thinking" in post["text"]
+    assert slack.updates[-1]["text"] == reply
